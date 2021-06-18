@@ -1,6 +1,6 @@
 ESX.Trace = function(msg)
 	if Config.EnableDebug then
-		print(('[^2TRACE^7] %s^7'):format(msg))
+		print(('[es_extended] [^2TRACE^7] %s^7'):format(msg))
 	end
 end
 
@@ -30,7 +30,7 @@ ESX.RegisterCommand = function(name, group, cb, allowConsole, suggestion)
 	end
 
 	if ESX.RegisteredCommands[name] then
-		print(('[^3WARNING^7] Command ^5"%s" already registered, overriding command'):format(name))
+		print(('[es_extended] [^3WARNING^7] An command "%s" is already registered, overriding command'):format(name))
 
 		if ESX.RegisteredCommands[name].suggestion then
 			TriggerClientEvent('chat:removeSuggestion', -1, ('/%s'):format(name))
@@ -50,7 +50,7 @@ ESX.RegisterCommand = function(name, group, cb, allowConsole, suggestion)
 		local command = ESX.RegisteredCommands[name]
 
 		if not command.allowConsole and playerId == 0 then
-			print(('[^3WARNING^7] ^5%s'):format(_U('commanderror_console')))
+			print(('[es_extended] [^3WARNING^7] %s'):format(_U('commanderror_console')))
 		else
 			local xPlayer, error = ESX.GetPlayerFromId(playerId), nil
 
@@ -122,14 +122,14 @@ ESX.RegisterCommand = function(name, group, cb, allowConsole, suggestion)
 
 			if error then
 				if playerId == 0 then
-					print(('[^3WARNING^7] %s^7'):format(error))
+					print(('[es_extended] [^3WARNING^7] %s^7'):format(error))
 				else
 					xPlayer.triggerEvent('chat:addMessage', {args = {'^1SYSTEM', error}})
 				end
 			else
 				cb(xPlayer or false, args, function(msg)
 					if playerId == 0 then
-						print(('[^3WARNING^7] %s^7'):format(msg))
+						print(('[es_extended] [^3WARNING^7] %s^7'):format(msg))
 					else
 						xPlayer.triggerEvent('chat:addMessage', {args = {'^1SYSTEM', msg}})
 					end
@@ -159,7 +159,7 @@ ESX.TriggerServerCallback = function(name, requestId, source, cb, ...)
 	if ESX.ServerCallbacks[name] then
 		ESX.ServerCallbacks[name](source, cb, ...)
 	else
-		print(('[^3WARNING^7] Server callback ^5"%s"^0 does not exist. ^1Please Check The Server File for Errors!'):format(name))
+		print(('[es_extended] [^3WARNING^7] Server callback "%s" does not exist. Make sure that the server sided file really is loading, an error in that file might cause it to not load.'):format(name))
 	end
 end
 
@@ -182,7 +182,7 @@ ESX.SavePlayer = function(xPlayer, cb)
 	end)
 
 	Async.parallel(asyncTasks, function(results)
-		print(('[^2INFO^7] Saved player ^5"%s^7"'):format(xPlayer.getName()))
+		print(('[es_extended] [^2INFO^7] Saved player "%s^7"'):format(xPlayer.getName()))
 
 		if cb then
 			cb()
@@ -201,7 +201,7 @@ ESX.SavePlayers = function(cb)
 	end
 
 	Async.parallelLimit(asyncTasks, 8, function(results)
-		print(('[^2INFO^7] Saved ^5%s^0 player(s)'):format(#xPlayers))
+		print(('[es_extended] [^2INFO^7] Saved %s player(s)'):format(#xPlayers))
 		if cb then
 			cb()
 		end
@@ -239,21 +239,15 @@ ESX.GetPlayerFromIdentifier = function(identifier)
 	end
 end
 
-ESX.GetIdentifier = function(playerId)
-	for k,v in ipairs(GetPlayerIdentifiers(playerId)) do
-		if string.match(v, 'license') then
-			local identifier = string.gsub(v, 'license:', '')
-			return identifier
-		end
-	end
-end
-
 ESX.RegisterUsableItem = function(item, cb)
 	ESX.UsableItemsCallbacks[item] = cb
 end
 
-ESX.UseItem = function(source, item)
-	ESX.UsableItemsCallbacks[item](source, item)
+-- Ensure item is usable before using it, add optional param
+ESX.UseItem = function(source, item, remove, ...)
+	if ESX.UsableItemsCallbacks[item] then
+	  ESX.UsableItemsCallbacks[item](source,remove,...)
+	end
 end
 
 ESX.GetItemLabel = function(item)
@@ -292,4 +286,8 @@ ESX.DoesJobExist = function(job, grade)
 	end
 
 	return false
+end
+
+ESX.GetJobs = function()
+    return ESX.Jobs
 end

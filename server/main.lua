@@ -1,6 +1,6 @@
 Citizen.CreateThread(function()
 	SetMapName('San Andreas')
-	SetGameType('ESX Roleplay')
+	SetGameType('Roleplay')
 end)
 
 RegisterNetEvent('esx:onPlayerJoined')
@@ -11,55 +11,53 @@ AddEventHandler('esx:onPlayerJoined', function()
 end)
 
 function onPlayerJoined(playerId)
-	local identifier = ESX.GetIdentifier(playerId)
-
-	if identifier then
+	TriggerEvent("Multichar:GetCharacterIdentifier",playerId,function(identifier)
+	  if identifier then
 		if ESX.GetPlayerFromIdentifier(identifier) then
-			DropPlayer(playerId, ('there was an error loading your character!\nError code: identifier-active-ingame\n\nThis error is caused by a player on this server who has the same identifier as you have. Make sure you are not playing on the same Rockstar account.\n\nYour Rockstar identifier: %s'):format(identifier))
+		  DropPlayer(playerId, ('there was an error loading your character!\nError code: identifier-active-ingame\n\nThis error is caused by a player on this server who has the same identifier as you have. Make sure you are not playing on the same Rockstar account.\n\nYour Rockstar identifier: %s'):format(identifier))
 		else
-			MySQL.Async.fetchScalar('SELECT 1 FROM users WHERE identifier = @identifier', {
+		  MySQL.Async.fetchScalar('SELECT 1 FROM users WHERE identifier = @identifier', {
+			['@identifier'] = identifier
+		  }, function(result)
+			if result then
+			  loadESXPlayer(identifier, playerId)
+			else
+			  local accounts = {}
+  
+			  for account,money in pairs(Config.StartingAccountMoney) do
+				accounts[account] = money
+			  end
+  
+			  MySQL.Async.execute('INSERT INTO users (accounts, identifier) VALUES (@accounts, @identifier)', {
+				['@accounts'] = json.encode(accounts),
 				['@identifier'] = identifier
-			}, function(result)
-				if result then
-					loadESXPlayer(identifier, playerId, false)
-				else
-					local accounts = {}
-
-					for account,money in pairs(Config.StartingAccountMoney) do
-						accounts[account] = money
-					end
-
-					if IsPlayerAceAllowed(playerId, "command") then
-						print(('^2[INFO] ^0 Player ^5%s ^0Has been granted admin permissions via ^5Ace Perms.^7'):format(playerId))
-						defaultGroup = "admin"
-					else
-						defaultGroup = "user"
-					end
-
-					MySQL.Async.execute('INSERT INTO users (`accounts`, `identifier`, `group`) VALUES (@accounts, @identifier, @group)', {
-						['@accounts'] = json.encode(accounts),
-						['@identifier'] = identifier,
-						['@group'] = defaultGroup
-					}, function(rowsChanged)
-						loadESXPlayer(identifier, playerId, true)
-					end)
-				end
-			end)
+			  }, function(rowsChanged)
+				loadESXPlayer(identifier, playerId)
+			  end)
+			end
+		  end)
 		end
-	else
+	  else
 		DropPlayer(playerId, 'there was an error loading your character!\nError code: identifier-missing-ingame\n\nThe cause of this error is not known, your identifier could not be found. Please come back later or report this problem to the server administration team.')
-	end
-end
+	  end
+	end)
+  end
 
 AddEventHandler('playerConnecting', function(name, setCallback, deferrals)
 	deferrals.defer()
-	local playerId = source
-	local identifier = ESX.GetIdentifier(playerId)
+	local playerId, identifier = source
 	Citizen.Wait(100)
+
+	for k,v in ipairs(GetPlayerIdentifiers(playerId)) do
+		if string.match(v, 'license:') then
+			identifier = string.sub(v, 9)
+			break
+		end
+	end
 
 	if identifier then
 		if ESX.GetPlayerFromIdentifier(identifier) then
-			deferrals.done(('There was an error loading your character!\nError code: identifier-active\n\nThis error is caused by a player on this server who has the same identifier as you have. Make sure you are not playing on the same account.\n\nYour identifier: %s'):format(identifier))
+			deferrals.done(('There was an error loading your character!\nError code: identifier-active\n\nThis error is caused by a player on this server who has the same identifier as you have. Make sure you are not playing on the same Rockstar account.\n\nYour Rockstar identifier: %s'):format(identifier))
 		else
 			deferrals.done()
 		end
@@ -68,7 +66,8 @@ AddEventHandler('playerConnecting', function(name, setCallback, deferrals)
 	end
 end)
 
-function loadESXPlayer(identifier, playerId, isNew)
+
+function loadESXPlayer(identifier, playerId)
 	local tasks = {}
 
 	local userData = {
@@ -108,7 +107,7 @@ function loadESXPlayer(identifier, playerId, isNew)
 			if ESX.DoesJobExist(job, grade) then
 				jobObject, gradeObject = ESX.Jobs[job], ESX.Jobs[job].grades[grade]
 			else
-				print(('[^3WARNING^7] Ignoring invalid job for %s [job: %s, grade: %s]'):format(identifier, job, grade))
+				print(('[es_extended] [^3WARNING^7] Ignoring invalid job for %s [job: %s, grade: %s]'):format(identifier, job, grade))
 				job, grade = 'unemployed', '0'
 				jobObject, gradeObject = ESX.Jobs[job], ESX.Jobs[job].grades[grade]
 			end
@@ -138,7 +137,7 @@ function loadESXPlayer(identifier, playerId, isNew)
 					if item then
 						foundItems[name] = count
 					else
-						print(('[^3WARNING^7] Ignoring invalid item "%s" for "%s"'):format(name, identifier))
+						-- print(('[es_extended] [^3WARNING^7] Ignoring invalid item "%s" for "%s"'):format(name, identifier))
 					end
 				end
 			end
@@ -164,11 +163,7 @@ function loadESXPlayer(identifier, playerId, isNew)
 
 			-- Group
 			if result[1].group then
-				if result[1].group == "superadmin" then
-					userData.group = "admin"
-				else
-					userData.group = result[1].group
-				end
+				userData.group = result[1].group
 			else
 				userData.group = 'user'
 			end
@@ -199,7 +194,7 @@ function loadESXPlayer(identifier, playerId, isNew)
 			if result[1].position and result[1].position ~= '' then
 				userData.coords = json.decode(result[1].position)
 			else
-				print('[^3WARNING^7] Column ^5"position"^0 in ^5"users"^0 table is missing required default value. Using backup coords, fix your database.')
+				print('[es_extended] [^3WARNING^7] Column "position" in "users" table is missing required default value. Using backup coords, fix your database.')
 				userData.coords = {x = -269.4, y = -955.3, z = 31.2, heading = 205.8}
 			end
 
@@ -210,7 +205,7 @@ function loadESXPlayer(identifier, playerId, isNew)
 	Async.parallel(tasks, function(results)
 		local xPlayer = CreateExtendedPlayer(playerId, identifier, userData.group, userData.accounts, userData.inventory, userData.weight, userData.job, userData.loadout, userData.playerName, userData.coords)
 		ESX.Players[playerId] = xPlayer
-		TriggerEvent('esx:playerLoaded', playerId, xPlayer, isNew)
+		TriggerEvent('esx:playerLoaded', playerId, xPlayer)
 
 		xPlayer.triggerEvent('esx:playerLoaded', {
 			accounts = xPlayer.getAccounts(),
@@ -221,11 +216,11 @@ function loadESXPlayer(identifier, playerId, isNew)
 			loadout = xPlayer.getLoadout(),
 			maxWeight = xPlayer.getMaxWeight(),
 			money = xPlayer.getMoney()
-		}, isNew)
+		})
 
 		xPlayer.triggerEvent('esx:createMissingPickups', ESX.Pickups)
 		xPlayer.triggerEvent('esx:registerSuggestions', ESX.RegisteredCommands)
-		print(('[^2INFO^0] Player ^5"%s" ^0has connected to the server. ID: ^5%s^7'):format(xPlayer.getName(), playerId))
+		print(('[es_extended] [^2INFO^7] A player with name "%s^7" has connected to the server with assigned player id %s'):format(xPlayer.getName(), playerId))
 	end)
 end
 
@@ -499,80 +494,19 @@ ESX.RegisterServerCallback('esx:getPlayerNames', function(source, cb, players)
 	cb(players)
 end)
 
-AddEventHandler('txAdmin:events:scheduledRestart', function(eventData)
-  if eventData.secondsRemaining == 60 then
-    Citizen.CreateThread(function()
-      Citizen.Wait(50000)
-      ESX.SavePlayers()
-     end)
-  end
-end)
+ESX.StartDBSync()
+ESX.StartPayCheck()
 
--- version check
-Citizen.CreateThread(
-	function()
-		local vRaw = LoadResourceFile(GetCurrentResourceName(), 'version.json')
-		if vRaw then
-			local v = json.decode(vRaw)
-			PerformHttpRequest(
-				'https://raw.githubusercontent.com/esx-framework/es_extended/legacy/version.json',
-				function(code, res, headers)
-					if code == 200 then
-						local rv = json.decode(res)
-						if rv.version == v.version then
-							if rv.commit ~= v.commit then 
-							print(
-								([[
-
-^1----------------------------------------------------------------------
-^1URGENT: YOUR ES-EXTENDED IS OUTDATED!
-^1COMMIT UPDATE: ^5%s AVAILABLE
-^1DOWNLOAD:^5 https://github.com/esx-framework/es_extended/tree/legacy
-^1CHANGELOG:^5 %s
-^1-----------------------------------------------------------------------
-]]):format(
-									rv.commit,
-									rv.changelog
-								)
-							)
-						else
-							print(
-								([[
-
-^8-------------------------------------------------------
-^2Your Es-extended is the latest version!
-^5Version:^0 %s
-^5COMMIT:^0 %s
-^5CHANGELOG:^0 %s
-^8-------------------------------------------------------
-]]):format(
-								 	rv.version,
-									rv.commit,
-									rv.changelog
-								)
-							)
-						end
-					else
-						print(
-							([[
-^1----------------------------------------------------------------------
-^1URGENT: YOUR ES-EXTENDED IS OUTDATATED!!!
-^1COMMIT UPDATE: ^5%s AVAILABLE
-^1DOWNLOAD:^5 https://github.com/esx-framework/es_extended/tree/legacy
-^1CHANGELOG:^5 %s
-^1-----------------------------------------------------------------------
-]]):format(
-								rv.commit,
-								rv.changelog
-							)
-						)
-						end
-					else
-						print('[^1ERROR^0] Es-Extended unable to check version!')
-					end
-				end,
-				'GET'
-			)
-		end
+AddEventHandler('esx:playerLogout', function(source,callback)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if xPlayer then
+	  TriggerEvent('esx:playerDropped', source, reason)
+  
+	  ESX.SavePlayer(xPlayer, function()
+		ESX.Players[source] = nil
+		callback()
+	  end)
 	end
-)
+	
+	TriggerClientEvent("esx:onPlayerLogout",source)
+  end)
