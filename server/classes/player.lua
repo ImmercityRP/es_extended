@@ -162,27 +162,6 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		self.name = newName
 	end
 
-	self.setAccountMoney = function(accountName, money)
-		if money >= 0 then
-		  local account = self.getAccount(accountName)
-	  
-		  if account then
-			local prevMoney = account.money
-			local newMoney = ESX.Math.Round(money)
-			local diff = math.abs(tonumber(prevMoney) - tonumber(newMoney))
-			account.money = newMoney
-	  
-			self.triggerEvent('esx:setAccountMoney', account)
-	  
-			if prevMoney > newMoney then
-			  exports["mf-inventory"]:removeInventoryItem(self.identifier,accountName,diff,self.source)
-			elseif prevMoney < newMoney then
-			  exports["mf-inventory"]:addInventoryItem(self.identifier,accountName,diff,self.source)
-			end
-		  end
-		end
-	end
-
 	self.addAccountMoney = function(accountName, money, ignoreInventory)
 		if money > 0 then
 		  local account = self.getAccount(accountName)
@@ -216,18 +195,39 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		  end
 		end
 	end
+	  
+	self.setAccountMoney = function(accountName, money)
+		if money >= 0 then
+		  local account = self.getAccount(accountName)
+	  
+		  if account then
+			local prevMoney = account.money
+			local newMoney = ESX.Math.Round(money)
+			local diff = math.abs(tonumber(prevMoney) - tonumber(newMoney))
+			account.money = newMoney
+	  
+			self.triggerEvent('esx:setAccountMoney', account)
+	  
+			if prevMoney > newMoney then
+			  exports["mf-inventory"]:removeInventoryItem(self.identifier,accountName,diff,self.source)
+			elseif prevMoney < newMoney then
+			  exports["mf-inventory"]:addInventoryItem(self.identifier,accountName,diff,self.source)
+			end
+		  end
+		end
+	end
 
-	-- Will return first stack of items found in inventory by name 
-	-- Optional param count: find first stack by name where count >= count
+-- Will return first stack of items found in inventory by name 
+-- Optional param count: find first stack by name where count >= count
 	self.getInventoryItem = function(name,count, ...)
 		return exports["mf-inventory"]:getInventoryItem(self.identifier,name,count, ...)
-	end
-	
-	-- Optional param quality.
+  	end
+
+-- Optional param quality.
 	self.addInventoryItem = function(name, count, quality, ...)
 		return exports["mf-inventory"]:addInventoryItem(self.identifier,name,count,self.source,quality, ...)
-	end
-	
+  	end
+
 	self.removeInventoryItem = function(name, count, ...)
 		return exports["mf-inventory"]:removeInventoryItem(self.identifier,name,count,self.source, ...)
 	end

@@ -3,6 +3,7 @@ local isPaused, isDead, pickups = false, false, {}
 Citizen.CreateThread(function()
 	while true do
 		Citizen.Wait(0)
+
 		-- if NetworkIsPlayerActive(PlayerId()) then
 		-- 	TriggerServerEvent('esx:onPlayerJoined')
 		-- 	break

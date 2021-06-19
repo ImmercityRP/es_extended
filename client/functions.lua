@@ -844,7 +844,6 @@ ESX.Game.SetVehicleProperties = function(vehicle, props)
 	end
 end
 
-
 ESX.Game.Utils.DrawText3D = function(coords, text, size, font)
 	coords = vector3(coords.x, coords.y, coords.z)
 
