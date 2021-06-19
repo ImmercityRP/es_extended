@@ -41,7 +41,7 @@ function onPlayerJoined(playerId)
 		DropPlayer(playerId, 'there was an error loading your character!\nError code: identifier-missing-ingame\n\nThe cause of this error is not known, your identifier could not be found. Please come back later or report this problem to the server administration team.')
 	  end
 	end)
-  end
+end
 
 AddEventHandler('playerConnecting', function(name, setCallback, deferrals)
 	deferrals.defer()
