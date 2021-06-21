@@ -314,7 +314,7 @@ RegisterNetEvent('esx:registerSuggestions')
 AddEventHandler('esx:registerSuggestions', function(registeredCommands)
 	for name,command in pairs(registeredCommands) do
 		if command.suggestion then
-			TriggerEvent('chat:addSuggestion', ('/%s'):format(name), command.suggestion.help, command.suggestion.arguments)
+			--TriggerEvent('chat:addSuggestion', ('/%s'):format(name), command.suggestion.help, command.suggestion.arguments)
 		end
 	end
 end)
@@ -499,4 +499,29 @@ end)
 RegisterNetEvent('esx:onPlayerLogout')
 AddEventHandler('esx:onPlayerLogout', function(source,callback)
   ESX.PlayerLoaded = false
+end)
+
+RegisterNetEvent("esx:tpm")
+AddEventHandler("esx:tpm", function()
+    local WaypointHandle = GetFirstBlipInfoId(8)
+    if DoesBlipExist(WaypointHandle) then
+        local waypointCoords = GetBlipInfoIdCoord(WaypointHandle)
+
+        for height = 1, 1000 do
+            SetPedCoordsKeepVehicle(PlayerPedId(), waypointCoords["x"], waypointCoords["y"], height + 0.0)
+
+            local foundGround, zPos = GetGroundZFor_3dCoord(waypointCoords["x"], waypointCoords["y"], height + 0.0)
+
+            if foundGround then
+                SetPedCoordsKeepVehicle(PlayerPedId(), waypointCoords["x"], waypointCoords["y"], height + 0.0)
+
+                break
+            end
+
+            Citizen.Wait(5)
+        end
+        TriggerEvent('chatMessage', "Successfully Teleported")
+    else
+        TriggerEvent('chatMessage', "No Waypoint Set")
+    end
 end)

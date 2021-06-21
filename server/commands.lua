@@ -135,3 +135,7 @@ end, true, {help = _U('command_save'), validate = true, arguments = {
 ESX.RegisterCommand('saveall', 'admin', function(xPlayer, args, showError)
 	ESX.SavePlayers()
 end, true, {help = _U('command_saveall')})
+
+ESX.RegisterCommand('tpm', 'admin', function(xPlayer, args, showError)
+	xPlayer.triggerEvent("esx:tpm")
+end, true)
