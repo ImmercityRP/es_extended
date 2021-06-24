@@ -177,7 +177,7 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 			end
 		  end
 		end
-	end
+	  end
 	  
 	self.removeAccountMoney = function(accountName, money, ignoreInventory)
 		if money > 0 then
@@ -219,18 +219,18 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 
 -- Will return first stack of items found in inventory by name 
 -- Optional param count: find first stack by name where count >= count
-	self.getInventoryItem = function(name,count, ...)
-		return exports["mf-inventory"]:getInventoryItem(self.identifier,name,count, ...)
-  	end
-
+self.getInventoryItem = function(name,count, ...)
+	return exports["mf-inventory"]:getInventoryItem(self.identifier,name,count, ...)
+end
+  
 -- Optional param quality.
-	self.addInventoryItem = function(name, count, quality, ...)
-		return exports["mf-inventory"]:addInventoryItem(self.identifier,name,count,self.source,quality, ...)
-  	end
-
-	self.removeInventoryItem = function(name, count, ...)
-		return exports["mf-inventory"]:removeInventoryItem(self.identifier,name,count,self.source, ...)
-	end
+self.addInventoryItem = function(name, count, quality, ...)
+	return exports["mf-inventory"]:addInventoryItem(self.identifier,name,count,self.source,quality, ...)
+end
+  
+self.removeInventoryItem = function(name, count, ...)
+	return exports["mf-inventory"]:removeInventoryItem(self.identifier,name,count,self.source, ...)
+end
 
 	self.setInventoryItem = function(name, count)
 		local item = self.getInventoryItem(name)

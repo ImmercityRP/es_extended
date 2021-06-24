@@ -108,16 +108,16 @@ ESX.RegisterCommand('clearinventory', 'admin', function(xPlayer, args, showError
 	exports["mf-inventory"]:clearInventory(xPlayer.identifier)
   end, true, {help = _U('command_clearinventory'), validate = true, arguments = {
 	{name = 'playerId', help = _U('id_param'), type = 'player'}
-  }})
+}})
   
-  ESX.RegisterCommand('clearloadout', 'admin', function(xPlayer, args, showError)
+ESX.RegisterCommand('clearloadout', 'admin', function(xPlayer, args, showError)
 	for k,v in ipairs(args.playerId.loadout) do
 	  args.playerId.removeWeapon(v.name,v.ammo,true)
 	end
 	exports["mf-inventory"]:clearLoadout(xPlayer.identifier)
   end, true, {help = _U('command_clearloadout'), validate = true, arguments = {
 	{name = 'playerId', help = _U('id_param'), type = 'player'}
-  }})
+}})
 
 ESX.RegisterCommand('setgroup', 'admin', function(xPlayer, args, showError)
 	args.playerId.setGroup(args.group)

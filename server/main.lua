@@ -510,3 +510,9 @@ AddEventHandler('esx:playerLogout', function(source,callback)
 	
 	TriggerClientEvent("esx:onPlayerLogout",source)
   end)
+
+AddEventHandler('txAdmin:events:scheduledRestart',function(eventData)
+	if eventData.secondsRemaining == 30 then
+	  exports["mf-inventory"]:saveInventories()
+	end
+  end)

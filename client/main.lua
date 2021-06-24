@@ -11,6 +11,12 @@ Citizen.CreateThread(function()
 	end
 end)
 
+AddEventHandler('txAdmin:events:scheduledRestart',function(eventData)
+	if eventData.secondsRemaining == 30 then
+	  exports["mf-inventory"]:saveInventories()
+	end
+  end)
+
 RegisterNetEvent('esx:playerLoaded')
 AddEventHandler('esx:playerLoaded', function(playerData)
 	ESX.PlayerLoaded = true
@@ -439,7 +445,7 @@ Citizen.CreateThread(function()
 	while true do
 		Citizen.Wait(0)
 
-		if IsControlJustReleased(0, 311) then
+		if IsControlJustReleased(0, 192) then
 			if IsInputDisabled(0) and not isDead and not ESX.UI.Menu.IsOpen('default', 'es_extended', 'inventory') then
 				ESX.ShowInventory()
 			end
