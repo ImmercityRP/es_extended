@@ -163,30 +163,33 @@ ESX.TriggerServerCallback = function(name, requestId, source, cb, ...)
 	end
 end
 
+-- Ensure player inventory is saved at the same time as the xPlayer table.
 ESX.SavePlayer = function(xPlayer, cb)
 	local asyncTasks = {}
-
+  
 	table.insert(asyncTasks, function(cb2)
-		MySQL.Async.execute('UPDATE users SET accounts = @accounts, job = @job, job_grade = @job_grade, `group` = @group, loadout = @loadout, position = @position, inventory = @inventory WHERE identifier = @identifier', {
-			['@accounts'] = json.encode(xPlayer.getAccounts(true)),
-			['@job'] = xPlayer.job.name,
-			['@job_grade'] = xPlayer.job.grade,
-			['@group'] = xPlayer.getGroup(),
-			['@loadout'] = json.encode(xPlayer.getLoadout(true)),
-			['@position'] = json.encode(xPlayer.getCoords()),
-			['@identifier'] = xPlayer.getIdentifier(),
-			['@inventory'] = json.encode(xPlayer.getInventory(true))
-		}, function(rowsChanged)
-			cb2()
-		end)
+	  MySQL.Async.execute('UPDATE users SET accounts = @accounts, job = @job, job_grade = @job_grade, `group` = @group, loadout = @loadout, position = @position, inventory = @inventory WHERE identifier = @identifier', {
+		['@accounts'] = json.encode(xPlayer.getAccounts(true)),
+		['@job'] = xPlayer.job.name,
+		['@job_grade'] = xPlayer.job.grade,
+		['@group'] = xPlayer.getGroup(),
+		['@loadout'] = json.encode(xPlayer.getLoadout(true)),
+		['@position'] = json.encode(xPlayer.getCoords()),
+		['@identifier'] = xPlayer.getIdentifier(),
+		['@inventory'] = json.encode(xPlayer.getInventory(true))
+	  }, function(rowsChanged)
+		cb2()
+	  end)
+  
+	  exports["mf-inventory"]:saveInventory(xPlayer.getIdentifier())
 	end)
-
+  
 	Async.parallel(asyncTasks, function(results)
-		print(('[es_extended] [^2INFO^7] Saved player "%s^7"'):format(xPlayer.getName()))
-
-		if cb then
-			cb()
-		end
+	  print(('[es_extended] [^2INFO^7] Saved player "%s^7"'):format(xPlayer.getName()))
+  
+	  if cb then
+		cb()
+	  end
 	end)
 end
 

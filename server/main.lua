@@ -509,7 +509,7 @@ AddEventHandler('esx:playerLogout', function(source,callback)
 	end
 	
 	TriggerClientEvent("esx:onPlayerLogout",source)
-  end)
+end)
 
 AddEventHandler('txAdmin:events:scheduledRestart',function(eventData)
 	if eventData.secondsRemaining == 30 then
