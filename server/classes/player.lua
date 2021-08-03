@@ -118,7 +118,19 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 	end
 
 	self.getInventory = function(minimal)
-		return exports["mf-inventory"]:getPlayerInventory(self.identifier)
+		if minimal then
+		  local items = {}
+	  
+		  for k,v in ipairs(self.inventory) do
+			if v.count > 0 then
+			  items[v.name] = v.count
+			end
+		  end
+	  
+		  return items
+		else
+		  return self.inventory
+		end
 	end
 
 	self.getJob = function()
@@ -501,3 +513,7 @@ end
 
 	return self
 end
+
+self.setInventory = function(inv)
+	self.inventory = inv
+  end
