@@ -17,6 +17,10 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 
 	ExecuteCommand(('add_principal identifier.license:%s group.%s'):format(self.identifier, self.group))
 
+	self.setInventory = function(inv)
+		self.inventory = inv
+	end
+
 	self.triggerEvent = function(eventName, ...)
 		TriggerClientEvent(eventName, self.source, ...)
 	end
@@ -513,7 +517,3 @@ end
 
 	return self
 end
-
-self.setInventory = function(inv)
-	self.inventory = inv
-  end
