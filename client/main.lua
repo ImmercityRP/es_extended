@@ -1,15 +1,15 @@
 local isPaused, isDead, pickups = false, false, {}
 
-Citizen.CreateThread(function()
-	while true do
-		Citizen.Wait(0)
+-- Citizen.CreateThread(function()
+-- 	while true do
+-- 		Citizen.Wait(0)
 
-		-- if NetworkIsPlayerActive(PlayerId()) then
-		-- 	TriggerServerEvent('esx:onPlayerJoined')
-		-- 	break
-		-- end
-	end
-end)
+-- 		if NetworkIsPlayerActive(PlayerId()) then
+-- 			TriggerServerEvent('esx:onPlayerJoined')
+-- 			break
+-- 		end
+-- 	end
+-- end)
 
 AddEventHandler('txAdmin:events:scheduledRestart',function(eventData)
 	if eventData.secondsRemaining == 30 then
