@@ -55,8 +55,15 @@ end, true, {help = _U('command_giveaccountmoney'), validate = true, arguments = 
 }})
 
 ESX.RegisterCommand('giveitem', 'admin', function(xPlayer, args, showError)
+	local item = args.item:lower()
+	for i=1,#Config.Weapons do
+	  if Config.Weapons[i].name:lower() == item then
+		return
+	  end
+	end
+  
 	args.playerId.addInventoryItem(args.item, args.count)
-end, true, {help = _U('command_giveitem'), validate = true, arguments = {
+  end, true, {help = _U('command_giveitem'), validate = true, arguments = {
 	{name = 'playerId', help = _U('commandgeneric_playerid'), type = 'player'},
 	{name = 'item', help = _U('command_giveitem_item'), type = 'item'},
 	{name = 'count', help = _U('command_giveitem_count'), type = 'number'}
@@ -107,16 +114,16 @@ end, false, {help = _U('command_clearall')})
 ESX.RegisterCommand('clearinventory', 'admin', function(xPlayer, args, showError)
 	exports["mf-inventory"]:clearInventory(args.playerId.identifier)
   end, true, {help = _U('command_clearinventory'), validate = true, arguments = {
-	{name = 'playerId', help = _U('id_param'), type = 'player'}
+	{name = 'playerId', help = _U('commandgeneric_playerid'), type = 'player'}
 }})
   
 ESX.RegisterCommand('clearloadout', 'admin', function(xPlayer, args, showError)
 	for k,v in ipairs(args.playerId.loadout) do
-	  args.playerId.removeWeapon(v.name,v.ammo,true)
+	  args.playerId.removeWeapon(v.name)
 	end
 	exports["mf-inventory"]:clearLoadout(args.playerId.identifier)
   end, true, {help = _U('command_clearloadout'), validate = true, arguments = {
-	{name = 'playerId', help = _U('id_param'), type = 'player'}
+	{name = 'playerId', help = _U('commandgeneric_playerid'), type = 'player'}
 }})
 
 ESX.RegisterCommand('setgroup', 'admin', function(xPlayer, args, showError)

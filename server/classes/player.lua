@@ -231,16 +231,16 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 -- Will return first stack of items found in inventory by name 
 -- Optional param count: find first stack by name where count >= count
 self.getInventoryItem = function(name,count, ...)
-	return exports["mf-inventory"]:getInventoryItem(self.identifier,name,count, ...)
+	return exports["mf-inventory"]:getInventoryItem(self.identifier, name, count, ...)
 end
   
 -- Optional param quality.
 self.addInventoryItem = function(name, count, quality, ...)
-	return exports["mf-inventory"]:addInventoryItem(self.identifier,name,count,self.source,quality, ...)
+	return exports["mf-inventory"]:addInventoryItem(self.identifier, name, count, self.source, quality, ...)
 end
   
 self.removeInventoryItem = function(name, count, ...)
-	return exports["mf-inventory"]:removeInventoryItem(self.identifier,name,count,self.source, ...)
+	return exports["mf-inventory"]:removeInventoryItem(self.identifier, name, count, self.source, ...)
 end
 
 	self.setInventoryItem = function(name, count)
@@ -339,7 +339,7 @@ end
 		  })
 	  
 		  self.triggerEvent('esx:addWeapon', weaponName, ammo)
-		  self.triggerEvent('esx:addInventoryItem', weaponLabel, false, false)
+		  self.triggerEvent('esx:addInventoryItem', weaponLabel, false, true)
 	  
 		  if not ignoreInventory then
 			exports["mf-inventory"]:addInventoryItem(self.identifier,weaponName,1,self.source)
@@ -407,27 +407,24 @@ end
 	end
 
 	self.removeWeapon = function(weaponName, ammo, ignoreInventory)
-		local weaponLabel,weaponIndex
+		local weaponLabel
 	  
 		for k,v in ipairs(self.loadout) do
 		  if v.name == weaponName then
 			weaponLabel = v.label
-			weaponIndex = k
 	  
 			for k2,v2 in ipairs(v.components) do
 			  self.removeWeaponComponent(weaponName, v2)
 			end
 	  
+			table.remove(self.loadout, k)
 			break
 		  end
 		end
 	  
 		if weaponLabel then
-		  local weapon = self.loadout[weaponIndex]
-		  table.remove(self.loadout,weaponIndex)
-	  
-		  self.triggerEvent('esx:removeWeapon', weaponName, ammo)     
-		  self.triggerEvent('esx:removeInventoryItem', weaponLabel, false, false)
+		  self.triggerEvent('esx:removeWeapon', weaponName, ammo)
+		  self.triggerEvent('esx:removeInventoryItem', weaponLabel, false, true)
 	  
 		  if not ignoreInventory then
 			exports["mf-inventory"]:removeInventoryItem(self.identifier,weaponName,1,self.source)

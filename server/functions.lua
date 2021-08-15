@@ -180,7 +180,7 @@ ESX.SavePlayer = function(xPlayer, cb)
 	  }, function(rowsChanged)
 		cb2()
 	  end)
-  
+	  
 	  exports["mf-inventory"]:saveInventory(xPlayer.getIdentifier())
 	end)
   
