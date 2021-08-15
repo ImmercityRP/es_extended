@@ -189,11 +189,11 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 			self.triggerEvent('esx:setAccountMoney', account)
 	  
 			if not ignoreInventory then
-			  exports["mf-inventory"]:addInventoryItem(self.identifier,accountName,money,self.source)
+			  exports["mf-inventory"]:setAccountMoney(self.source,self.identifier,accountName,account.money)
 			end
 		  end
 		end
-	  end
+	end
 	  
 	self.removeAccountMoney = function(accountName, money, ignoreInventory)
 		if money > 0 then
@@ -206,7 +206,7 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 			self.triggerEvent('esx:setAccountMoney', account)
 	  
 			if not ignoreInventory then
-			  exports["mf-inventory"]:removeInventoryItem(self.identifier,accountName,money,self.source)
+			  exports["mf-inventory"]:setAccountMoney(self.source,self.identifier,accountName,account.money)
 			end
 		  end
 		end
@@ -219,16 +219,11 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		  if account then
 			local prevMoney = account.money
 			local newMoney = ESX.Math.Round(money)
-			local diff = math.abs(tonumber(prevMoney) - tonumber(newMoney))
 			account.money = newMoney
 	  
 			self.triggerEvent('esx:setAccountMoney', account)
 	  
-			if prevMoney > newMoney then
-			  exports["mf-inventory"]:removeInventoryItem(self.identifier,accountName,diff,self.source)
-			elseif prevMoney < newMoney then
-			  exports["mf-inventory"]:addInventoryItem(self.identifier,accountName,diff,self.source)
-			end
+			exports["mf-inventory"]:setAccountMoney(self.source,self.identifier,accountName,account.money)
 		  end
 		end
 	end
