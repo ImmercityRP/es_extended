@@ -225,16 +225,10 @@ function loadESXPlayer(identifier, playerId)
 end
 
 AddEventHandler('chatMessage', function(playerId, author, message)
-	local time = os.date('%H:%M')
-
 	if message:sub(1, 1) == '/' and playerId > 0 then
 		CancelEvent()
 		local commandName = message:sub(1):gmatch("%w+")()
-
-		TriggerClientEvent('chat:addMessage', playerId, {
-		template = '<div class="chat-message system"><i class="fas fa-cog"></i> <b><span style="color: #df7b00">SYSTEM</span>&nbsp;<span style="font-size: 14px; color: #e1e1e1;">{1}</span></b><div style="margin-top: 5px; font-weight: 300;"><b>{0}</b> is not a valid command!</div></div>',
-		args = { commandName, time }
-	})
+		TriggerClientEvent('chat:addMessage', playerId, {args = {'^1SYSTEM', _U('commanderror_invalidcommand', commandName)}})
 	end
 end)
 
