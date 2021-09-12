@@ -359,8 +359,15 @@ ESX.Game.SpawnLocalObject = function(model, coords, cb)
 end
 
 ESX.Game.DeleteVehicle = function(vehicle)
-	SetEntityAsMissionEntity(vehicle, false, true)
-	DeleteVehicle(vehicle)
+    if (NetworkGetEntityIsNetworked(vehicle)) then
+        TriggerServerEvent("AdvancedParking:deleteVehicle", GetVehicleNumberPlateText(vehicle), true)
+        Citizen.Wait(300)
+    end
+
+    if (DoesEntityExist(vehicle)) then
+        SetEntityAsMissionEntity(vehicle,  false,  true)
+        DeleteVehicle(vehicle)
+    end
 end
 
 ESX.Game.DeleteObject = function(object)
