@@ -266,10 +266,7 @@ end
 	end
 
 	self.canCarryItem = function(name, count)
-		local currentWeight, itemWeight = self.weight, ESX.Items[name].weight
-		local newWeight = currentWeight + (itemWeight * count)
-
-		return newWeight <= self.maxWeight
+		return exports['mf-inventory']:canCarry(self.identifier,name,count)
 	end
 
 	self.canSwapItem = function(firstItem, firstItemCount, testItem, testItemCount)
