@@ -294,33 +294,3 @@ end
 ESX.GetJobs = function()
     return ESX.Jobs
 end
-
-local serverBusy
-AddEventHandler("playerConnecting",function(name,setKickReason,deferrals)
-  -- stop players connecting if server is busy
-  if serverBusy then
-    CancelEvent()
-    setKickReason("Server is restarting. Try again soon.")
-  end
-end)
-AddEventHandler('txAdmin:events:scheduledRestart',function(eventData)
-    -- if not already busy, and < 5 minutes remaining, trigger shutdown
-	if eventData.secondsRemaining == (60 * 10) then
-		TriggerClientEvent('chat:addMessage', source, {
-			template = '<div class="chat-message police"><i class="fas fa-bullhorn"></i> <b><span style="color: #4a6cfd">{0}</span>&nbsp;<span style="font-size: 14px; color: #e1e1e1;">{2}</span></b><div style="margin-top: 5px; font-weight: 300;">{1}</div></div>',
-			args = {{"^0^5^*[SERVER]^r ", "WARNING: SERVER KICKS YOU OUT AT 5 MINS TILL RESTART. WHICH IS IN 5 MINS."}}
-		})
-	end
-    if not serverBusy and eventData.secondsRemaining <= (60 * 5) then
-      -- set server busy, so no players can join
-      serverBusy = true
-      -- kick all connected players
-      for _,xPlayer in pairs(ESX.GetPlayers()) do
-        xPlayer.kick("Server restart coming. Kicking now to save inventories.")
-      end
-      -- wait a minute to ensure sql operations have been performed for xPlayer.save()
-      Wait(60 * 1000)
-      -- save all other (non-player) inventories
-      exports['mf-inventory']:saveInventories()
-    end
-end)
