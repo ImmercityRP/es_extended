@@ -228,20 +228,20 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		end
 	end
 
--- Will return first stack of items found in inventory by name 
--- Optional param count: find first stack by name where count >= count
-self.getInventoryItem = function(name,count, ...)
-	return exports["mf-inventory"]:getInventoryItem(self.identifier, name, count, ...)
-end
-  
--- Optional param quality.
-self.addInventoryItem = function(name, count, quality, ...)
-	return exports["mf-inventory"]:addInventoryItem(self.identifier, name, count, self.source, quality, ...)
-end
-  
-self.removeInventoryItem = function(name, count, ...)
-	return exports["mf-inventory"]:removeInventoryItem(self.identifier, name, count, self.source, ...)
-end
+	-- Will return first stack of items found in inventory by name 
+	-- Optional param count: find first stack by name where count >= count
+	self.getInventoryItem = function(name,count, ...)
+		return exports["mf-inventory"]:getInventoryItem(self.identifier, name, count, ...)
+	end
+	
+	-- Optional param quality.
+	self.addInventoryItem = function(name, count, quality, ...)
+		return exports["mf-inventory"]:addInventoryItem(self.identifier, name, count, self.source, quality, ...)
+	end
+	
+	self.removeInventoryItem = function(name, count, ...)
+		return exports["mf-inventory"]:removeInventoryItem(self.identifier, name, count, self.source, ...)
+	end
 
 	self.setInventoryItem = function(name, count)
 		local item = self.getInventoryItem(name)
@@ -269,18 +269,8 @@ end
 		return exports['mf-inventory']:canCarry(self.identifier,name,count)
 	end
 
-	self.canSwapItem = function(firstItem, firstItemCount, testItem, testItemCount)
-		local firstItemObject = self.getInventoryItem(firstItem)
-		local testItemObject = self.getInventoryItem(testItem)
-
-		if firstItemObject.count >= firstItemCount then
-			local weightWithoutFirstItem = ESX.Math.Round(self.weight - (firstItemObject.weight * firstItemCount))
-			local weightWithTestItem = ESX.Math.Round(weightWithoutFirstItem + (testItemObject.weight * testItemCount))
-
-			return weightWithTestItem <= self.maxWeight
-		end
-
-		return false
+	self.canSwapItem = function(...)
+		return exports['mf-inventory']:canSwap(self.identifier,...)
 	end
 
 	self.setMaxWeight = function(newWeight)
