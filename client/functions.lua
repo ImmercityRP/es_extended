@@ -565,21 +565,21 @@ ESX.Game.GetVehicleProperties = function(vehicle)
 			end
 		end
 
-		-- local tyres = {}
-        -- tyres[1] = {burst = IsVehicleTyreBurst(vehicle, 0, false), id = 0}
-        -- tyres[2] = {burst = IsVehicleTyreBurst(vehicle, 1, false), id = 1}
-        -- tyres[3] = {burst = IsVehicleTyreBurst(vehicle, 4, false), id = 4}
-        -- tyres[4] = {burst = IsVehicleTyreBurst(vehicle, 5, false), id = 5}
+		local tyres = {}
+        tyres[1] = {burst = IsVehicleTyreBurst(vehicle, 0, false), id = 0}
+        tyres[2] = {burst = IsVehicleTyreBurst(vehicle, 1, false), id = 1}
+        tyres[3] = {burst = IsVehicleTyreBurst(vehicle, 4, false), id = 4}
+        tyres[4] = {burst = IsVehicleTyreBurst(vehicle, 5, false), id = 5}
 
-        -- local doors = {}
-        -- for i = 0, 5, 1 do
-        --     doors[tostring(i)] = IsVehicleDoorDamaged(vehicle, i)
-        -- end
+        local doors = {}
+        for i = 0, 5, 1 do
+            doors[tostring(i)] = IsVehicleDoorDamaged(vehicle, i)
+        end
 
-        -- local windows = {}
-        -- for i = 0, 13 do
-        --     windows[tostring(i)] = IsVehicleWindowIntact(vehicle, i)
-        -- end
+        local windows = {}
+        for i = 0, 13 do
+            windows[tostring(i)] = IsVehicleWindowIntact(vehicle, i)
+        end
 
 		return {
 			model             = GetEntityModel(vehicle),
@@ -672,9 +672,9 @@ ESX.Game.GetVehicleProperties = function(vehicle)
 			modLivery2         = GetVehicleMod(vehicle, 48),
 			engine 			  =	GetVehicleEngineHealth(vehicle),
 			body 			  = GetVehicleBodyHealth(vehicle),
-			--tyres			  = tyres,
-			--doors			  = doors,
-			--windows 		  = windows
+			tyres			  = tyres,
+			doors			  = doors,
+			windows 		  = windows
 		}
 	else
 		return
@@ -825,29 +825,29 @@ ESX.Game.SetVehicleProperties = function(vehicle, props)
             end	
         end
 
-        -- if props.tyres ~= nil then
-        --     for i,tyre in pairs(props.tyres) do
-        --         if tyre.burst then
-        --             SetVehicleTyreBurst(vehicle, tyre.id, 0, 1000.0)
-        --         end
-        --     end
-        -- end
+        if props.tyres ~= nil then
+            for i,tyre in pairs(props.tyres) do
+                if tyre.burst then
+                    SetVehicleTyreBurst(vehicle, tyre.id, 0, 1000.0)
+                end
+            end
+        end
 
-        -- if props.doors ~= nil then
-        --     for i,door in pairs(props.doors) do
-        --         if door then
-        --             SetVehicleDoorBroken(vehicle, tonumber(i), true)
-        --         end
-        --     end
-        -- end
+        if props.doors ~= nil then
+            for i,door in pairs(props.doors) do
+                if door then
+                    SetVehicleDoorBroken(vehicle, tonumber(i), true)
+                end
+            end
+        end
 
-        -- if props.windows ~= nil then
-        --     for i,window in pairs(props.windows) do
-        --         if window == false then
-        --             SmashVehicleWindow(vehicle, tonumber(i))
-        --         end
-        --     end
-        -- end
+        if props.windows ~= nil then
+            for i,window in pairs(props.windows) do
+                if window == false then
+                    SmashVehicleWindow(vehicle, tonumber(i))
+                end
+            end
+        end
 	end
 end
 
