@@ -670,8 +670,8 @@ ESX.Game.GetVehicleProperties = function(vehicle)
 			modWindows        = GetVehicleMod(vehicle, 46),
 			modLivery         = GetVehicleLivery(vehicle),
 			modLivery2         = GetVehicleMod(vehicle, 48),
-			engine 			  =	GetVehicleEngineHealth(vehicle),
-			body 			  = GetVehicleBodyHealth(vehicle),
+			--engine 			  =	GetVehicleEngineHealth(vehicle),
+			--body 			  = GetVehicleBodyHealth(vehicle),
 			--tyres			  = tyres,
 			--doors			  = doors,
 			--windows 		  = windows
@@ -805,25 +805,25 @@ ESX.Game.SetVehicleProperties = function(vehicle, props)
 		if props.modLivery2 then
 			SetVehicleMod(vehicle, 48, props.modLivery2, false)
 		end
-		if props.engine ~= nil then
-            if props.engine < 980 then
-                if props.engine < 400 then 
-                    SetVehicleEngineHealth(vehicle, 400.0)
-                else
-                    SetVehicleEngineHealth(vehicle, tonumber(props.engine))
-                end
-            end	
-        end
+		-- if props.engine ~= nil then
+        --     if props.engine < 980 then
+        --         if props.engine < 400 then 
+        --             SetVehicleEngineHealth(vehicle, 400.0)
+        --         else
+        --             SetVehicleEngineHealth(vehicle, tonumber(props.engine))
+        --         end
+        --     end	
+        -- end
 
-        if props.body ~= nil then
-            if props.body < 980 then
-                if props.body < 400 then 
-                    SetVehicleBodyHealth(vehicle, 400.0)
-                else
-                    SetVehicleBodyHealth(vehicle, tonumber(props.body))
-                end
-            end	
-        end
+        -- if props.body ~= nil then
+        --     if props.body < 980 then
+        --         if props.body < 400 then 
+        --             SetVehicleBodyHealth(vehicle, 400.0)
+        --         else
+        --             SetVehicleBodyHealth(vehicle, tonumber(props.body))
+        --         end
+        --     end	
+        -- end
 
         -- if props.tyres ~= nil then
         --     for i,tyre in pairs(props.tyres) do
