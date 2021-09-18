@@ -14,12 +14,9 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 	self.variables = {}
 	self.weight = weight
 	self.maxWeight = Config.MaxWeight
+	if Config.Multichar then self.license = 'license'..string.sub(identifier, 6) else self.license = 'license:'..identifier end
 
-	ExecuteCommand(('add_principal identifier.license:%s group.%s'):format(self.identifier, self.group))
-
-	self.setInventory = function(inv)
-		self.inventory = inv
-	end
+	ExecuteCommand(('add_principal identifier.%s group.%s'):format(self.license, self.group))
 
 	self.triggerEvent = function(eventName, ...)
 		TriggerClientEvent(eventName, self.source, ...)
@@ -123,17 +120,17 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 
 	self.getInventory = function(minimal)
 		if minimal then
-		  local items = {}
-	  
-		  for k,v in ipairs(self.inventory) do
-			if v.count > 0 then
-			  items[v.name] = v.count
+			local minimalInventory = {}
+
+			for k,v in ipairs(self.inventory) do
+				if v.count > 0 then
+					minimalInventory[v.name] = v.count
+				end
 			end
-		  end
-	  
-		  return items
+
+			return minimalInventory
 		else
-		  return self.inventory
+			return self.inventory
 		end
 	end
 
@@ -178,40 +175,6 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		self.name = newName
 	end
 
-	self.addAccountMoney = function(accountName, money, ignoreInventory)
-		if money > 0 then
-		  local account = self.getAccount(accountName)
-	  
-		  if account then
-			local newMoney = account.money + ESX.Math.Round(money)
-			account.money = newMoney
-	  
-			self.triggerEvent('esx:setAccountMoney', account)
-	  
-			if not ignoreInventory then
-			  exports["mf-inventory"]:setAccountMoney(self.source,self.identifier,accountName,account.money)
-			end
-		  end
-		end
-	end
-	  
-	self.removeAccountMoney = function(accountName, money, ignoreInventory)
-		if money > 0 then
-		  local account = self.getAccount(accountName)
-	  
-		  if account then
-			local newMoney = account.money - ESX.Math.Round(money)
-			account.money = newMoney
-	  
-			self.triggerEvent('esx:setAccountMoney', account)
-	  
-			if not ignoreInventory then
-			  exports["mf-inventory"]:setAccountMoney(self.source,self.identifier,accountName,account.money)
-			end
-		  end
-		end
-	end
-	  
 	self.setAccountMoney = function(accountName, money)
 		if money >= 0 then
 		  local account = self.getAccount(accountName)
@@ -228,19 +191,54 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		end
 	end
 
-	-- Will return first stack of items found in inventory by name 
-	-- Optional param count: find first stack by name where count >= count
-	self.getInventoryItem = function(name,count, ...)
+	self.addAccountMoney = function(accountName, money, ignoreInventory)
+		if money > 0 then
+		  local account = self.getAccount(accountName)
+	  
+		  if account then
+			local newMoney = account.money + ESX.Math.Round(money)
+			account.money = newMoney
+	  
+			self.triggerEvent('esx:setAccountMoney', account)
+	  
+			if not ignoreInventory then
+			  exports["mf-inventory"]:setAccountMoney(self.source,self.identifier,accountName,account.money)
+			end
+		  end
+		end
+	end
+
+	self.removeAccountMoney = function(accountName, money, ignoreInventory)
+		if money > 0 then
+		  local account = self.getAccount(accountName)
+	  
+		  if account then
+			local newMoney = account.money - ESX.Math.Round(money)
+			account.money = newMoney
+	  
+			self.triggerEvent('esx:setAccountMoney', account)
+	  
+			if not ignoreInventory then
+			  exports["mf-inventory"]:setAccountMoney(self.source,self.identifier,accountName,account.money)
+			end
+		  end
+		end
+	end
+
+	self.getInventoryItem = function(name, count, ...)
 		return exports["mf-inventory"]:getInventoryItem(self.identifier, name, count, ...)
 	end
-	
-	-- Optional param quality.
+
 	self.addInventoryItem = function(name, count, quality, ...)
 		return exports["mf-inventory"]:addInventoryItem(self.identifier, name, count, self.source, quality, ...)
 	end
-	
+
 	self.removeInventoryItem = function(name, count, ...)
 		return exports["mf-inventory"]:removeInventoryItem(self.identifier, name, count, self.source, ...)
+	end
+
+	self.setInventory = function(inv)
+		self.inventory = inv
 	end
 
 	self.setInventoryItem = function(name, count)
@@ -265,8 +263,8 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		return self.maxWeight
 	end
 
-	self.canCarryItem = function(name, count)
-		return exports['mf-inventory']:canCarry(self.identifier,name,count)
+	self.canCarryItem = function(...)
+		return exports['mf-inventory']:canCarry(self.identifier,...)
 	end
 
 	self.canSwapItem = function(...)
