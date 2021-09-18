@@ -7,6 +7,8 @@ StartPayCheck = function()
 				local job     = xPlayer.job.grade_name
 				local salary  = xPlayer.job.grade_salary
 
+				TriggerClientEvent('t1ger_carinsurance:payVehInsurance', xPlayer.source)
+
 				if salary > 0 then
 					if job == 'unemployed' then -- unemployed
 						xPlayer.addAccountMoney('bank', salary)

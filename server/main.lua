@@ -44,23 +44,51 @@ else
 end
 
 function onPlayerJoined(playerId)
-	local identifier = ESX.GetIdentifier(playerId)
-	if identifier then
+	TriggerEvent("Multichar:GetCharacterIdentifier",playerId,function(identifier)
+	  if identifier then
 		if ESX.GetPlayerFromIdentifier(identifier) then
-			DropPlayer(playerId, ('there was an error loading your character!\nError code: identifier-active-ingame\n\nThis error is caused by a player on this server who has the same identifier as you have. Make sure you are not playing on the same Rockstar account.\n\nYour Rockstar identifier: %s'):format(identifier))
+		  DropPlayer(playerId, ('there was an error loading your character!\nError code: identifier-active-ingame\n\nThis error is caused by a player on this server who has the same identifier as you have. Make sure you are not playing on the same Rockstar account.\n\nYour Rockstar identifier: %s'):format(identifier))
 		else
-			MySQL.Async.fetchScalar('SELECT 1 FROM users WHERE identifier = @identifier', {
+		  MySQL.Async.fetchScalar('SELECT 1 FROM users WHERE identifier = @identifier', {
+			['@identifier'] = identifier
+		  }, function(result)
+			if result then
+			  loadESXPlayer(identifier, playerId)
+			else
+			  local accounts = {}
+  
+			  for account,money in pairs(Config.StartingAccountMoney) do
+				accounts[account] = money
+			  end
+  
+			  MySQL.Async.execute('INSERT INTO users (accounts, identifier) VALUES (@accounts, @identifier)', {
+				['@accounts'] = json.encode(accounts),
 				['@identifier'] = identifier
-			}, function(result)
-				if result then
-					loadESXPlayer(identifier, playerId, false)
-				else createESXPlayer(identifier, playerId) end
-			end)
+			  }, function(rowsChanged)
+				loadESXPlayer(identifier, playerId)
+			  end)
+			end
+		  end)
 		end
-	else
+	  else
 		DropPlayer(playerId, 'there was an error loading your character!\nError code: identifier-missing-ingame\n\nThe cause of this error is not known, your identifier could not be found. Please come back later or report this problem to the server administration team.')
-	end
+	  end
+	end)
 end
+
+AddEventHandler('esx:playerLogout', function(source,callback)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if xPlayer then
+	  TriggerEvent('esx:playerDropped', source, reason)
+  
+	  ESX.SavePlayer(xPlayer, function()
+		ESX.Players[source] = nil
+		callback()
+	  end)
+	end
+	
+	TriggerClientEvent("esx:onPlayerLogout",source)
+end)
 
 function createESXPlayer(identifier, playerId, data)
 	local accounts = {}
@@ -186,7 +214,7 @@ function loadESXPlayer(identifier, playerId, isNew)
 					if item then
 						foundItems[name] = count
 					else
-						print(('[^3WARNING^7] Ignoring invalid item "%s" for "%s"'):format(name, identifier))
+						-- print(('[^3WARNING^7] Ignoring invalid item "%s" for "%s"'):format(name, identifier))
 					end
 				end
 			end
@@ -304,11 +332,25 @@ function loadESXPlayer(identifier, playerId, isNew)
 	end)
 end
 
+-- AddEventHandler('chatMessage', function(playerId, author, message)
+-- 	if message:sub(1, 1) == '/' and playerId > 0 then
+-- 		CancelEvent()
+-- 		local commandName = message:sub(1):gmatch("%w+")()
+-- 		TriggerClientEvent('chat:addMessage', playerId, {args = {'^1SYSTEM', _U('commanderror_invalidcommand', commandName)}})
+-- 	end
+-- end)
+
 AddEventHandler('chatMessage', function(playerId, author, message)
+	local time = os.date('%H:%M')
+
 	if message:sub(1, 1) == '/' and playerId > 0 then
 		CancelEvent()
 		local commandName = message:sub(1):gmatch("%w+")()
-		TriggerClientEvent('chat:addMessage', playerId, {args = {'^1SYSTEM', _U('commanderror_invalidcommand', commandName)}})
+
+		TriggerClientEvent('chat:addMessage', playerId, {
+		template = '<div class="chat-message system"><i class="fas fa-cog"></i> <b><span style="color: #df7b00">SYSTEM</span>&nbsp;<span style="font-size: 14px; color: #e1e1e1;">{1}</span></b><div style="margin-top: 5px; font-weight: 300;"><b>{0}</b> is not a valid command!</div></div>',
+		args = { commandName, time }
+	})
 	end
 end)
 

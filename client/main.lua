@@ -1,16 +1,16 @@
 local pickups = {}
 
-Citizen.CreateThread(function()
-	while not Config.Multichar do
-		Citizen.Wait(0)
-		if NetworkIsPlayerActive(PlayerId()) then
-			exports.spawnmanager:setAutoSpawn(false)
-			DoScreenFadeOut(0)
-			TriggerServerEvent('esx:onPlayerJoined')
-			break
-		end
-	end
-end)
+-- Citizen.CreateThread(function()
+-- 	while not Config.Multichar do
+-- 		Citizen.Wait(0)
+-- 		if NetworkIsPlayerActive(PlayerId()) then
+-- 			exports.spawnmanager:setAutoSpawn(false)
+-- 			DoScreenFadeOut(0)
+-- 			TriggerServerEvent('esx:onPlayerJoined')
+-- 			break
+-- 		end
+-- 	end
+-- end)
 
 RegisterNetEvent('esx:playerLoaded')
 AddEventHandler('esx:playerLoaded', function(xPlayer, isNew, skin)
@@ -74,10 +74,15 @@ AddEventHandler('esx:playerLoaded', function(xPlayer, isNew, skin)
 	StartServerSyncLoops()
 end)
 
+-- RegisterNetEvent('esx:onPlayerLogout')
+-- AddEventHandler('esx:onPlayerLogout', function()
+-- 	ESX.PlayerLoaded = false
+-- 	if Config.EnableHud then ESX.UI.HUD.Reset() end
+-- end)
+
 RegisterNetEvent('esx:onPlayerLogout')
-AddEventHandler('esx:onPlayerLogout', function()
-	ESX.PlayerLoaded = false
-	if Config.EnableHud then ESX.UI.HUD.Reset() end
+AddEventHandler('esx:onPlayerLogout', function(source,callback)
+  ESX.PlayerLoaded = false
 end)
 
 RegisterNetEvent('esx:setMaxWeight')
@@ -428,7 +433,7 @@ if Config.EnableDefaultInventory then
 		end
 	end)
 
-	RegisterKeyMapping('showinv', _U('keymap_showinventory'), 'keyboard', 'F2')
+	RegisterKeyMapping('showinv', _U('keymap_showinventory'), 'keyboard', 'TAB')
 end
 
 -- disable wanted level

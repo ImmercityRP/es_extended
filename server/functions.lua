@@ -170,28 +170,30 @@ end)
 
 ESX.SavePlayer = function(xPlayer, cb)
 	local asyncTasks = {}
-
+  
 	table.insert(asyncTasks, function(cb2)
-		MySQL.Async.execute(savePlayers, {
-			json.encode(xPlayer.getAccounts(true)),
-			xPlayer.job.name,
-			xPlayer.job.grade,
-			xPlayer.getGroup(),
-			json.encode(xPlayer.getCoords()),
-			json.encode(xPlayer.getInventory(true)),
-			json.encode(xPlayer.getLoadout(true)),
-			xPlayer.getIdentifier()
-		}, function(rowsChanged)
-			cb2()
-		end)
+	  MySQL.Async.execute('UPDATE users SET accounts = @accounts, job = @job, job_grade = @job_grade, `group` = @group, loadout = @loadout, position = @position, inventory = @inventory WHERE identifier = @identifier', {
+		['@accounts'] = json.encode(xPlayer.getAccounts(true)),
+		['@job'] = xPlayer.job.name,
+		['@job_grade'] = xPlayer.job.grade,
+		['@group'] = xPlayer.getGroup(),
+		['@loadout'] = json.encode(xPlayer.getLoadout(true)),
+		['@position'] = json.encode(xPlayer.getCoords()),
+		['@identifier'] = xPlayer.getIdentifier(),
+		['@inventory'] = json.encode(xPlayer.getInventory(true))
+	  }, function(rowsChanged)
+		cb2()
+	  end)
+	  
+	  exports["mf-inventory"]:saveInventory(xPlayer.getIdentifier())
 	end)
-
+  
 	Async.parallel(asyncTasks, function(results)
-		print(('[^2INFO^7] Saved player ^5"%s^7"'):format(xPlayer.getName()))
-
-		if cb then
-			cb()
-		end
+	  print(('[es_extended] [^2INFO^7] Saved player "%s^7"'):format(xPlayer.getName()))
+  
+	  if cb then
+		cb()
+	  end
 	end)
 end
 
@@ -288,8 +290,10 @@ ESX.RegisterUsableItem = function(item, cb)
 	ESX.UsableItemsCallbacks[item] = cb
 end
 
-ESX.UseItem = function(source, item)
-	ESX.UsableItemsCallbacks[item](source, item)
+ESX.UseItem = function(source, item, remove, ...)
+	if ESX.UsableItemsCallbacks[item] then
+	  ESX.UsableItemsCallbacks[item](source,remove,...)
+	end
 end
 
 ESX.GetItemLabel = function(item)
@@ -328,4 +332,8 @@ ESX.DoesJobExist = function(job, grade)
 	end
 
 	return false
+end
+
+ESX.GetJobs = function()
+    return ESX.Jobs
 end

@@ -67,9 +67,21 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 	end
 
 	self.setGroup = function(newGroup)
-		ExecuteCommand(('remove_principal identifier.%s group.%s'):format(self.license, self.group))
-		self.group = newGroup
-		ExecuteCommand(('add_principal identifier.%s group.%s'):format(self.license, self.group))
+		local identifiers = GetPlayerIdentifiers(self.source)
+		local searchForId = "license"
+		local identifier
+		for _,id in ipairs(identifiers) do
+			if id:find(searchForId) then
+				identifier = id
+				break
+			end
+		end
+	
+		if identifier then
+			ExecuteCommand(('remove_principal identifier.%s group.%s'):format(identifier, self.group))
+			self.group = newGroup
+			ExecuteCommand(('add_principal identifier.%s group.%s'):format(identifier, self.group))
+		end
 	end
 
 	self.getGroup = function()
@@ -165,82 +177,68 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 
 	self.setAccountMoney = function(accountName, money)
 		if money >= 0 then
-			local account = self.getAccount(accountName)
-
-			if account then
-				local prevMoney = account.money
-				local newMoney = ESX.Math.Round(money)
-				account.money = newMoney
-
-				self.triggerEvent('esx:setAccountMoney', account)
-			end
+		  local account = self.getAccount(accountName)
+	  
+		  if account then
+			local prevMoney = account.money
+			local newMoney = ESX.Math.Round(money)
+			account.money = newMoney
+	  
+			self.triggerEvent('esx:setAccountMoney', account)
+	  
+			exports["mf-inventory"]:setAccountMoney(self.source,self.identifier,accountName,account.money)
+		  end
 		end
 	end
 
-	self.addAccountMoney = function(accountName, money)
+	self.addAccountMoney = function(accountName, money, ignoreInventory)
 		if money > 0 then
-			local account = self.getAccount(accountName)
-
-			if account then
-				local newMoney = account.money + ESX.Math.Round(money)
-				account.money = newMoney
-
-				self.triggerEvent('esx:setAccountMoney', account)
+		  local account = self.getAccount(accountName)
+	  
+		  if account then
+			local newMoney = account.money + ESX.Math.Round(money)
+			account.money = newMoney
+	  
+			self.triggerEvent('esx:setAccountMoney', account)
+	  
+			if not ignoreInventory then
+			  exports["mf-inventory"]:setAccountMoney(self.source,self.identifier,accountName,account.money)
 			end
+		  end
 		end
 	end
 
-	self.removeAccountMoney = function(accountName, money)
+	self.removeAccountMoney = function(accountName, money, ignoreInventory)
 		if money > 0 then
-			local account = self.getAccount(accountName)
-
-			if account then
-				local newMoney = account.money - ESX.Math.Round(money)
-				account.money = newMoney
-
-				self.triggerEvent('esx:setAccountMoney', account)
+		  local account = self.getAccount(accountName)
+	  
+		  if account then
+			local newMoney = account.money - ESX.Math.Round(money)
+			account.money = newMoney
+	  
+			self.triggerEvent('esx:setAccountMoney', account)
+	  
+			if not ignoreInventory then
+			  exports["mf-inventory"]:setAccountMoney(self.source,self.identifier,accountName,account.money)
 			end
+		  end
 		end
 	end
 
-	self.getInventoryItem = function(name)
-		for k,v in ipairs(self.inventory) do
-			if v.name == name then
-				return v
-			end
-		end
-
-		return
+	self.getInventoryItem = function(name, count, ...)
+		return exports["mf-inventory"]:getInventoryItem(self.identifier, name, count, ...)
 	end
 
-	self.addInventoryItem = function(name, count)
-		local item = self.getInventoryItem(name)
-
-		if item then
-			count = ESX.Math.Round(count)
-			item.count = item.count + count
-			self.weight = self.weight + (item.weight * count)
-
-			TriggerEvent('esx:onAddInventoryItem', self.source, item.name, item.count)
-			self.triggerEvent('esx:addInventoryItem', item.name, item.count)
-		end
+	self.addInventoryItem = function(name, count, quality, ...)
+		return exports["mf-inventory"]:addInventoryItem(self.identifier, name, count, self.source, quality, ...)
 	end
 
-	self.removeInventoryItem = function(name, count)
-		local item = self.getInventoryItem(name)
+	self.removeInventoryItem = function(name, count, ...)
+		return exports["mf-inventory"]:removeInventoryItem(self.identifier, name, count, self.source, ...)
+	end
 
-		if item then
-			count = ESX.Math.Round(count)
-			local newCount = item.count - count
-
-			if newCount >= 0 then
-				item.count = newCount
-				self.weight = self.weight - (item.weight * count)
-
-				TriggerEvent('esx:onRemoveInventoryItem', self.source, item.name, item.count)
-				self.triggerEvent('esx:removeInventoryItem', item.name, item.count)
-			end
-		end
+	self.setInventory = function(inv)
+		self.inventory = inv
 	end
 
 	self.setInventoryItem = function(name, count)
@@ -265,25 +263,12 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		return self.maxWeight
 	end
 
-	self.canCarryItem = function(name, count)
-		local currentWeight, itemWeight = self.weight, ESX.Items[name].weight
-		local newWeight = currentWeight + (itemWeight * count)
-
-		return newWeight <= self.maxWeight
+	self.canCarryItem = function(...)
+		return exports['mf-inventory']:canCarry(self.identifier,...)
 	end
 
-	self.canSwapItem = function(firstItem, firstItemCount, testItem, testItemCount)
-		local firstItemObject = self.getInventoryItem(firstItem)
-		local testItemObject = self.getInventoryItem(testItem)
-
-		if firstItemObject.count >= firstItemCount then
-			local weightWithoutFirstItem = ESX.Math.Round(self.weight - (firstItemObject.weight * firstItemCount))
-			local weightWithTestItem = ESX.Math.Round(weightWithoutFirstItem + (testItemObject.weight * testItemCount))
-
-			return weightWithTestItem <= self.maxWeight
-		end
-
-		return false
+	self.canSwapItem = function(...)
+		return exports['mf-inventory']:canSwap(self.identifier,...)
 	end
 
 	self.setMaxWeight = function(newWeight)
@@ -326,20 +311,24 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		end
 	end
 
-	self.addWeapon = function(weaponName, ammo)
+	self.addWeapon = function(weaponName, ammo, ignoreInventory)
 		if not self.hasWeapon(weaponName) then
-			local weaponLabel = ESX.GetWeaponLabel(weaponName)
-
-			table.insert(self.loadout, {
-				name = weaponName,
-				ammo = ammo,
-				label = weaponLabel,
-				components = {},
-				tintIndex = 0
-			})
-
-			self.triggerEvent('esx:addWeapon', weaponName, ammo)
-			self.triggerEvent('esx:addInventoryItem', weaponLabel, false, true)
+		  local weaponLabel = ESX.GetWeaponLabel(weaponName)
+	  
+		  table.insert(self.loadout, {
+			name = weaponName,
+			ammo = ammo,
+			label = weaponLabel,
+			components = {},
+			tintIndex = 0
+		  })
+	  
+		  self.triggerEvent('esx:addWeapon', weaponName, ammo)
+		  self.triggerEvent('esx:addInventoryItem', weaponLabel, false, true)
+	  
+		  if not ignoreInventory then
+			exports["mf-inventory"]:addInventoryItem(self.identifier,weaponName,1,self.source)
+		  end
 		end
 	end
 
@@ -402,25 +391,29 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		return 0
 	end
 
-	self.removeWeapon = function(weaponName)
+	self.removeWeapon = function(weaponName, ammo, ignoreInventory)
 		local weaponLabel
-
+	  
 		for k,v in ipairs(self.loadout) do
-			if v.name == weaponName then
-				weaponLabel = v.label
-
-				for k2,v2 in ipairs(v.components) do
-					self.removeWeaponComponent(weaponName, v2)
-				end
-
-				table.remove(self.loadout, k)
-				break
+		  if v.name == weaponName then
+			weaponLabel = v.label
+	  
+			for k2,v2 in ipairs(v.components) do
+			  self.removeWeaponComponent(weaponName, v2)
 			end
+	  
+			table.remove(self.loadout, k)
+			break
+		  end
 		end
-
+	  
 		if weaponLabel then
-			self.triggerEvent('esx:removeWeapon', weaponName)
-			self.triggerEvent('esx:removeInventoryItem', weaponLabel, false, true)
+		  self.triggerEvent('esx:removeWeapon', weaponName, ammo)
+		  self.triggerEvent('esx:removeInventoryItem', weaponLabel, false, true)
+	  
+		  if not ignoreInventory then
+			exports["mf-inventory"]:removeInventoryItem(self.identifier,weaponName,1,self.source)
+		  end
 		end
 	end
 
