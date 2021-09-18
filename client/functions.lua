@@ -41,7 +41,13 @@ ESX.GetPlayerData = function()
 end
 
 ESX.SetPlayerData = function(key, val)
+	local current = ESX.PlayerData[key]
 	ESX.PlayerData[key] = val
+	if key ~= 'inventory' and key ~= 'loadout' then
+		if type(val) == 'table' or val ~= current then
+			TriggerEvent('esx:setPlayerData', key, val, current)
+		end
+	end
 end
 
 ESX.ShowNotification = function(msg)
@@ -138,6 +144,13 @@ ESX.UI.HUD.RemoveElement = function(name)
 		action    = 'deleteHUDElement',
 		name      = name
 	})
+end
+
+ESX.UI.HUD.Reset = function()
+	SendNUIMessage({
+		action    = 'resetHUDElements'
+	})
+	ESX.UI.HUD.RegisteredElements = {}
 end
 
 ESX.UI.HUD.UpdateElement = function(name, data)
@@ -308,21 +321,16 @@ ESX.Game.GetPedMugshot = function(ped, transparent)
 end
 
 ESX.Game.Teleport = function(entity, coords, cb)
+	local vector = type(coords) == "vector4" and coords or type(coords) == "vector3" and vector4(coords, 0.0) or vec(coords.x, coords.y, coords.z, coords.heading or 0.0)
+
 	if DoesEntityExist(entity) then
-		RequestCollisionAtCoord(coords.x, coords.y, coords.z)
-		local timeout = 0
-
-		-- we can get stuck here if any of the axies are "invalid"
-		while not HasCollisionLoadedAroundEntity(entity) and timeout < 2000 do
+		RequestCollisionAtCoord(vector.xyz)
+		while not HasCollisionLoadedAroundEntity(entity) do
 			Citizen.Wait(0)
-			timeout = timeout + 1
 		end
 
-		SetEntityCoords(entity, coords.x, coords.y, coords.z, false, false, false, false)
-
-		if type(coords) == 'table' and coords.heading then
-			SetEntityHeading(entity, coords.heading)
-		end
+		SetEntityCoords(entity, vector.xyz, false, false, false, false)
+		SetEntityHeading(entity, vector.w)
 	end
 
 	if cb then
@@ -330,44 +338,28 @@ ESX.Game.Teleport = function(entity, coords, cb)
 	end
 end
 
-ESX.Game.SpawnObject = function(model, coords, cb)
-	local model = (type(model) == 'number' and model or GetHashKey(model))
+ESX.Game.SpawnObject = function(object, coords, cb, networked)
+	local model = type(object) == 'number' and object or GetHashKey(object)
+	local vector = type(coords) == "vector3" and coords or vec(coords.x, coords.y, coords.z)
+	networked = networked == nil and true or networked
 
 	Citizen.CreateThread(function()
 		ESX.Streaming.RequestModel(model)
-		local obj = CreateObject(model, coords.x, coords.y, coords.z, true, false, true)
-		SetModelAsNoLongerNeeded(model)
 
+		local obj = CreateObject(model, vector.xyz, networked, false, true)
 		if cb then
 			cb(obj)
 		end
 	end)
 end
 
-ESX.Game.SpawnLocalObject = function(model, coords, cb)
-	local model = (type(model) == 'number' and model or GetHashKey(model))
-
-	Citizen.CreateThread(function()
-		ESX.Streaming.RequestModel(model)
-		local obj = CreateObject(model, coords.x, coords.y, coords.z, false, false, true)
-		SetModelAsNoLongerNeeded(model)
-
-		if cb then
-			cb(obj)
-		end
-	end)
+ESX.Game.SpawnLocalObject = function(object, coords, cb)
+	ESX.Game.SpawnObject(object, coords, cb, false)
 end
 
 ESX.Game.DeleteVehicle = function(vehicle)
-    if (NetworkGetEntityIsNetworked(vehicle)) then
-        TriggerServerEvent("AdvancedParking:deleteVehicle", GetVehicleNumberPlateText(vehicle), true)
-        Citizen.Wait(300)
-    end
-
-    if (DoesEntityExist(vehicle)) then
-        SetEntityAsMissionEntity(vehicle,  false,  true)
-        DeleteVehicle(vehicle)
-    end
+	SetEntityAsMissionEntity(vehicle, false, true)
+	DeleteVehicle(vehicle)
 end
 
 ESX.Game.DeleteObject = function(object)
@@ -375,28 +367,28 @@ ESX.Game.DeleteObject = function(object)
 	DeleteObject(object)
 end
 
-ESX.Game.SpawnVehicle = function(modelName, coords, heading, cb)
-	local model = (type(modelName) == 'number' and modelName or GetHashKey(modelName))
-
+ESX.Game.SpawnVehicle = function(vehicle, coords, heading, cb, networked)
+	local model = (type(vehicle) == 'number' and vehicle or GetHashKey(vehicle))
+	local vector = type(coords) == "vector3" and coords or vec(coords.x, coords.y, coords.z)
+	networked = networked == nil and true or networked
 	Citizen.CreateThread(function()
 		ESX.Streaming.RequestModel(model)
 
-		local vehicle = CreateVehicle(model, coords.x, coords.y, coords.z, heading, true, false)
-		local networkId = NetworkGetNetworkIdFromEntity(vehicle)
-		local timeout = 0
+		local vehicle = CreateVehicle(model, vector.xyz, heading, networked, false)
 
-		SetNetworkIdCanMigrate(networkId, true)
-		SetEntityAsMissionEntity(vehicle, true, false)
+		if networked then
+			local id = NetworkGetNetworkIdFromEntity(vehicle)
+			SetNetworkIdCanMigrate(id, true)
+			SetEntityAsMissionEntity(vehicle, true, false)
+		end
 		SetVehicleHasBeenOwnedByPlayer(vehicle, true)
 		SetVehicleNeedsToBeHotwired(vehicle, false)
-		SetVehRadioStation(vehicle, 'OFF')
 		SetModelAsNoLongerNeeded(model)
-		RequestCollisionAtCoord(coords.x, coords.y, coords.z)
+		SetVehRadioStation(vehicle, 'OFF')
 
-		-- we can get stuck here if any of the axies are "invalid"
-		while not HasCollisionLoadedAroundEntity(vehicle) and timeout < 2000 do
+		RequestCollisionAtCoord(vector.xyz)
+		while not HasCollisionLoadedAroundEntity(vehicle) do
 			Citizen.Wait(0)
-			timeout = timeout + 1
 		end
 
 		if cb then
@@ -405,32 +397,8 @@ ESX.Game.SpawnVehicle = function(modelName, coords, heading, cb)
 	end)
 end
 
-ESX.Game.SpawnLocalVehicle = function(modelName, coords, heading, cb)
-	local model = (type(modelName) == 'number' and modelName or GetHashKey(modelName))
-
-	Citizen.CreateThread(function()
-		ESX.Streaming.RequestModel(model)
-
-		local vehicle = CreateVehicle(model, coords.x, coords.y, coords.z, heading, false, false)
-		local timeout = 0
-
-		SetEntityAsMissionEntity(vehicle, true, false)
-		SetVehicleHasBeenOwnedByPlayer(vehicle, true)
-		SetVehicleNeedsToBeHotwired(vehicle, false)
-		SetVehRadioStation(vehicle, 'OFF')
-		SetModelAsNoLongerNeeded(model)
-		RequestCollisionAtCoord(coords.x, coords.y, coords.z)
-
-		-- we can get stuck here if any of the axies are "invalid"
-		while not HasCollisionLoadedAroundEntity(vehicle) and timeout < 2000 do
-			Citizen.Wait(0)
-			timeout = timeout + 1
-		end
-
-		if cb then
-			cb(vehicle)
-		end
-	end)
+ESX.Game.SpawnLocalVehicle = function(vehicle, coords, heading, cb)
+	ESX.Game.SpawnVehicle(vehicle, coords, heading, cb, false)
 end
 
 ESX.Game.IsVehicleEmpty = function(vehicle)
@@ -440,36 +408,24 @@ ESX.Game.IsVehicleEmpty = function(vehicle)
 	return passengers == 0 and driverSeatFree
 end
 
-ESX.Game.GetObjects = function()
-	local objects = {}
-
-	for object in EnumerateObjects() do
-		table.insert(objects, object)
-	end
-
-	return objects
+ESX.Game.GetObjects = function() -- Leave the function for compatibility
+	return GetGamePool('CObject')
 end
 
 ESX.Game.GetPeds = function(onlyOtherPeds)
-	local peds, myPed = {}, PlayerPedId()
+	local peds, myPed, pool = {}, ESX.PlayerData.ped, GetGamePool('CPed')
 
-	for ped in EnumeratePeds() do
-		if ((onlyOtherPeds and ped ~= myPed) or not onlyOtherPeds) then
-			table.insert(peds, ped)
-		end
-	end
+	for i=1, #pool do
+        if ((onlyOtherPeds and pool[i] ~= myPed) or not onlyOtherPeds) then
+            table.insert(peds, pool[i])
+        end
+    end
 
 	return peds
 end
 
-ESX.Game.GetVehicles = function()
-	local vehicles = {}
-
-	for vehicle in EnumerateVehicles() do
-		table.insert(vehicles, vehicle)
-	end
-
-	return vehicles
+ESX.Game.GetVehicles = function() -- Leave the function for compatibility
+	return GetGamePool('CVehicle')
 end
 
 ESX.Game.GetPlayers = function(onlyOtherPlayers, returnKeyValue, returnPeds)
@@ -490,13 +446,34 @@ ESX.Game.GetPlayers = function(onlyOtherPlayers, returnKeyValue, returnPeds)
 	return players
 end
 
-ESX.Game.GetClosestObject = function(coords, modelFilter) return ESX.Game.GetClosestEntity(ESX.Game.GetObjects(), false, coords, modelFilter) end
-ESX.Game.GetClosestPed = function(coords, modelFilter) return ESX.Game.GetClosestEntity(ESX.Game.GetPeds(true), false, coords, modelFilter) end
-ESX.Game.GetClosestPlayer = function(coords) return ESX.Game.GetClosestEntity(ESX.Game.GetPlayers(true, true), true, coords, nil) end
-ESX.Game.GetClosestVehicle = function(coords, modelFilter) return ESX.Game.GetClosestEntity(ESX.Game.GetVehicles(), false, coords, modelFilter) end
-ESX.Game.GetPlayersInArea = function(coords, maxDistance) return EnumerateEntitiesWithinDistance(ESX.Game.GetPlayers(true, true), true, coords, maxDistance) end
-ESX.Game.GetVehiclesInArea = function(coords, maxDistance) return EnumerateEntitiesWithinDistance(ESX.Game.GetVehicles(), false, coords, maxDistance) end
-ESX.Game.IsSpawnPointClear = function(coords, maxDistance) return #ESX.Game.GetVehiclesInArea(coords, maxDistance) == 0 end
+ESX.Game.GetClosestObject = function(coords, modelFilter)
+	return ESX.Game.GetClosestEntity(ESX.Game.GetObjects(), false, coords, modelFilter)
+end
+
+ESX.Game.GetClosestPed = function(coords, modelFilter)
+	return ESX.Game.GetClosestEntity(ESX.Game.GetPeds(true), false, coords, modelFilter)
+end
+
+ESX.Game.GetClosestPlayer = function(coords)
+	return ESX.Game.GetClosestEntity(ESX.Game.GetPlayers(true, true), true, coords, nil)
+end
+
+ESX.Game.GetClosestVehicle = function(coords, modelFilter)
+	return ESX.Game.GetClosestEntity(ESX.Game.GetVehicles(), false, coords, modelFilter)
+end
+
+ESX.Game.GetPlayersInArea = function(coords, maxDistance)
+	return EnumerateEntitiesWithinDistance(ESX.Game.GetPlayers(true, true), true, coords, maxDistance)
+end
+
+ESX.Game.GetVehiclesInArea = function(coords, maxDistance)
+	return EnumerateEntitiesWithinDistance(ESX.Game.GetVehicles(), false, coords, maxDistance)
+end
+
+ESX.Game.IsSpawnPointClear = function(coords, maxDistance)
+	return #ESX.Game.GetVehiclesInArea(coords, maxDistance) == 0
+end
+
 
 ESX.Game.GetClosestEntity = function(entities, isPlayerEntities, coords, modelFilter)
 	local closestEntity, closestEntityDistance, filteredEntities = -1, -1, nil
@@ -504,7 +481,7 @@ ESX.Game.GetClosestEntity = function(entities, isPlayerEntities, coords, modelFi
 	if coords then
 		coords = vector3(coords.x, coords.y, coords.z)
 	else
-		local playerPed = PlayerPedId()
+		local playerPed = ESX.PlayerData.ped
 		coords = GetEntityCoords(playerPed)
 	end
 
@@ -530,14 +507,15 @@ ESX.Game.GetClosestEntity = function(entities, isPlayerEntities, coords, modelFi
 end
 
 ESX.Game.GetVehicleInDirection = function()
-	local playerPed    = PlayerPedId()
+	local playerPed    = ESX.PlayerData.ped
 	local playerCoords = GetEntityCoords(playerPed)
 	local inDirection  = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 5.0, 0.0)
 	local rayHandle    = StartShapeTestRay(playerCoords, inDirection, 10, playerPed, 0)
 	local numRayHandle, hit, endCoords, surfaceNormal, entityHit = GetShapeTestResult(rayHandle)
 
 	if hit == 1 and GetEntityType(entityHit) == 2 then
-		return entityHit
+		local entityCoords = GetEntityCoords(entityHit)
+		return entityHit, entityCoords
 	end
 
 	return nil
@@ -547,39 +525,14 @@ ESX.Game.GetVehicleProperties = function(vehicle)
 	if DoesEntityExist(vehicle) then
 		local colorPrimary, colorSecondary = GetVehicleColours(vehicle)
 		local pearlescentColor, wheelColor = GetVehicleExtraColours(vehicle)
-		local paintType1, whoCaresColor1, nnn = GetVehicleModColor_1(vehicle)
-		local paintType2, whoCaresColor2 = GetVehicleModColor_2(vehicle)
-		local color3 = {}
-		local color4 = {}
-		color3[1], color3[2], color3[3] = GetVehicleCustomPrimaryColour(vehicle)
-		color4[1], color4[2], color4[3] = GetVehicleCustomSecondaryColour(vehicle)
-		local pearlescentColor, wheelColor = GetVehicleExtraColours(vehicle)
-		local dshcolor = GetVehicleDashboardColour(vehicle)
-		local intcolor = GetVehicleInteriorColour(vehicle)
 		local extras = {}
 
-		for id=0, 12 do
-			if DoesExtraExist(vehicle, id) then
-				local state = IsVehicleExtraTurnedOn(vehicle, id) == 1
-				extras[tostring(id)] = state
+		for extraId=0, 12 do
+			if DoesExtraExist(vehicle, extraId) then
+				local state = IsVehicleExtraTurnedOn(vehicle, extraId) == 1
+				extras[tostring(extraId)] = state
 			end
 		end
-
-		-- local tyres = {}
-        -- tyres[1] = {burst = IsVehicleTyreBurst(vehicle, 0, false), id = 0}
-        -- tyres[2] = {burst = IsVehicleTyreBurst(vehicle, 1, false), id = 1}
-        -- tyres[3] = {burst = IsVehicleTyreBurst(vehicle, 4, false), id = 4}
-        -- tyres[4] = {burst = IsVehicleTyreBurst(vehicle, 5, false), id = 5}
-
-        -- local doors = {}
-        -- for i = 0, 5, 1 do
-        --     doors[tostring(i)] = IsVehicleDoorDamaged(vehicle, i)
-        -- end
-
-        -- local windows = {}
-        -- for i = 0, 13 do
-        --     windows[tostring(i)] = IsVehicleWindowIntact(vehicle, i)
-        -- end
 
 		return {
 			model             = GetEntityModel(vehicle),
@@ -589,19 +542,15 @@ ESX.Game.GetVehicleProperties = function(vehicle)
 
 			bodyHealth        = ESX.Math.Round(GetVehicleBodyHealth(vehicle), 1),
 			engineHealth      = ESX.Math.Round(GetVehicleEngineHealth(vehicle), 1),
+			tankHealth        = ESX.Math.Round(GetVehiclePetrolTankHealth(vehicle), 1),
 
 			fuelLevel         = ESX.Math.Round(GetVehicleFuelLevel(vehicle), 1),
 			dirtLevel         = ESX.Math.Round(GetVehicleDirtLevel(vehicle), 1),
 			color1            = colorPrimary,
 			color2            = colorSecondary,
-			color3            = color3,
-			color4            = color4,
-			paintType		  = {paintType1, paintType2},
-			ColorType 		  = {whoCaresColor1, whoCaresColor2},	
+
 			pearlescentColor  = pearlescentColor,
 			wheelColor        = wheelColor,
-			dshcolor 		  = dshcolor,
-			intcolor 		  = intcolor,
 
 			wheels            = GetVehicleWheelType(vehicle),
 			windowTint        = GetVehicleWindowTint(vehicle),
@@ -640,8 +589,6 @@ ESX.Game.GetVehicleProperties = function(vehicle)
 			modTurbo          = IsToggleModOn(vehicle, 18),
 			modSmokeEnabled   = IsToggleModOn(vehicle, 20),
 			modXenon          = IsToggleModOn(vehicle, 22),
-			modWheelVariat	  = GetVehicleModVariation(vehicle,23),
-			modTyresBurst     = GetVehicleTyresCanBurst(vehicle),
 
 			modFrontWheels    = GetVehicleMod(vehicle, 23),
 			modBackWheels     = GetVehicleMod(vehicle, 24),
@@ -668,13 +615,7 @@ ESX.Game.GetVehicleProperties = function(vehicle)
 			modTrimB          = GetVehicleMod(vehicle, 44),
 			modTank           = GetVehicleMod(vehicle, 45),
 			modWindows        = GetVehicleMod(vehicle, 46),
-			modLivery         = GetVehicleLivery(vehicle),
-			modLivery2         = GetVehicleMod(vehicle, 48),
-			engine 			  =	GetVehicleEngineHealth(vehicle),
-			body 			  = GetVehicleBodyHealth(vehicle),
-			--tyres			  = tyres,
-			--doors			  = doors,
-			--windows 		  = windows
+			modLivery         = GetVehicleLivery(vehicle)
 		}
 	else
 		return
@@ -691,35 +632,11 @@ ESX.Game.SetVehicleProperties = function(vehicle, props)
 		if props.plateIndex then SetVehicleNumberPlateTextIndex(vehicle, props.plateIndex) end
 		if props.bodyHealth then SetVehicleBodyHealth(vehicle, props.bodyHealth + 0.0) end
 		if props.engineHealth then SetVehicleEngineHealth(vehicle, props.engineHealth + 0.0) end
+		if props.tankHealth then SetVehiclePetrolTankHealth(vehicle, props.tankHealth + 0.0) end
 		if props.fuelLevel then SetVehicleFuelLevel(vehicle, props.fuelLevel + 0.0) end
 		if props.dirtLevel then SetVehicleDirtLevel(vehicle, props.dirtLevel + 0.0) end
 		if props.color1 then SetVehicleColours(vehicle, props.color1, colorSecondary) end
 		if props.color2 then SetVehicleColours(vehicle, props.color1 or colorPrimary, props.color2) end
-		if props.color3 ~= nil then 
-			ClearVehicleCustomPrimaryColour(vehicle)
-			SetVehicleCustomPrimaryColour(vehicle, props.color3[1], props.color3[2], props.color3[3])
-		end
-		if props.color4 ~= nil then
-			ClearVehicleCustomSecondaryColour(vehicle)
-			SetVehicleCustomSecondaryColour(vehicle, props.color4[1], props.color4[2], props.color4[3])
-		end
-		if props.paintType ~= nil then
-			local coraplicarp = 0
-			local coraplicars = 0
-			if props.ColorType then
-				coraplicarp = props.ColorType[1]
-				coraplicars = props.ColorType[2]
-			end
-			SetVehicleModColor_1(vehicle, props.paintType[1], coraplicarp, 0)
-			SetVehicleModColor_2(vehicle, props.paintType[2], coraplicars)
-		end
-		if props.dshcolor ~= nil then
-			SetVehicleDashboardColour(vehicle, props.dshcolor)
-		end
-		if props.intcolor ~= nil then
-			SetVehicleInteriorColour(vehicle, props.intcolor)
-		end
-		----- APARTIR DAQUI N MEXI EM MAIS NADA
 		if props.pearlescentColor then SetVehicleExtraColours(vehicle, props.pearlescentColor, wheelColor) end
 		if props.wheelColor then SetVehicleExtraColours(vehicle, props.pearlescentColor or pearlescentColor, props.wheelColor) end
 		if props.wheels then SetVehicleWheelType(vehicle, props.wheels) end
@@ -733,11 +650,11 @@ ESX.Game.SetVehicleProperties = function(vehicle, props)
 		end
 
 		if props.extras then
-			for id,enabled in pairs(props.extras) do
+			for extraId,enabled in pairs(props.extras) do
 				if enabled then
-					SetVehicleExtra(vehicle, tonumber(id), 0)
+					SetVehicleExtra(vehicle, tonumber(extraId), 0)
 				else
-					SetVehicleExtra(vehicle, tonumber(id), 1)
+					SetVehicleExtra(vehicle, tonumber(extraId), 1)
 				end
 			end
 		end
@@ -765,16 +682,7 @@ ESX.Game.SetVehicleProperties = function(vehicle, props)
 		if props.modArmor then SetVehicleMod(vehicle, 16, props.modArmor, false) end
 		if props.modTurbo then ToggleVehicleMod(vehicle,  18, props.modTurbo) end
 		if props.modXenon then ToggleVehicleMod(vehicle,  22, props.modXenon) end
-		if props.modTyresBurst ~= nil then
-			SetVehicleTyresCanBurst(vehicle,props.modTyresBurst)
-		end
-		if props.modFrontWheels ~= nil then
-			local aplicar = false
-			if props.modWheelVariat then
-				aplicar = props.modWheelVariat
-			end
-			SetVehicleMod(vehicle, 23, props.modFrontWheels, aplicar)
-		end
+		if props.modFrontWheels then SetVehicleMod(vehicle, 23, props.modFrontWheels, false) end
 		if props.modBackWheels then SetVehicleMod(vehicle, 24, props.modBackWheels, false) end
 		if props.modPlateHolder then SetVehicleMod(vehicle, 25, props.modPlateHolder, false) end
 		if props.modVanityPlate then SetVehicleMod(vehicle, 26, props.modVanityPlate, false) end
@@ -800,62 +708,17 @@ ESX.Game.SetVehicleProperties = function(vehicle, props)
 		if props.modWindows then SetVehicleMod(vehicle, 46, props.modWindows, false) end
 
 		if props.modLivery then
+			SetVehicleMod(vehicle, 48, props.modLivery, false)
 			SetVehicleLivery(vehicle, props.modLivery)
 		end
-		if props.modLivery2 then
-			SetVehicleMod(vehicle, 48, props.modLivery2, false)
-		end
-		if props.engine ~= nil then
-            if props.engine < 980 then
-                if props.engine < 400 then 
-                    SetVehicleEngineHealth(vehicle, 400.0)
-                else
-                    SetVehicleEngineHealth(vehicle, tonumber(props.engine))
-                end
-            end	
-        end
-
-        if props.body ~= nil then
-            if props.body < 980 then
-                if props.body < 400 then 
-                    SetVehicleBodyHealth(vehicle, 400.0)
-                else
-                    SetVehicleBodyHealth(vehicle, tonumber(props.body))
-                end
-            end	
-        end
-
-        -- if props.tyres ~= nil then
-        --     for i,tyre in pairs(props.tyres) do
-        --         if tyre.burst then
-        --             SetVehicleTyreBurst(vehicle, tyre.id, 0, 1000.0)
-        --         end
-        --     end
-        -- end
-
-        -- if props.doors ~= nil then
-        --     for i,door in pairs(props.doors) do
-        --         if door then
-        --             SetVehicleDoorBroken(vehicle, tonumber(i), true)
-        --         end
-        --     end
-        -- end
-
-        -- if props.windows ~= nil then
-        --     for i,window in pairs(props.windows) do
-        --         if window == false then
-        --             SmashVehicleWindow(vehicle, tonumber(i))
-        --         end
-        --     end
-        -- end
 	end
 end
 
 ESX.Game.Utils.DrawText3D = function(coords, text, size, font)
-	coords = vector3(coords.x, coords.y, coords.z)
+	local vector = type(coords) == "vector3" and coords or vec(coords.x, coords.y, coords.z)
 
 	local camCoords = GetGameplayCamCoords()
-	local distance = #(coords - camCoords)
+	local distance = #(vector - camCoords)
 
 	if not size then size = 1 end
 	if not font then font = 0 end
@@ -866,22 +729,262 @@ ESX.Game.Utils.DrawText3D = function(coords, text, size, font)
 
 	SetTextScale(0.0 * scale, 0.55 * scale)
 	SetTextFont(font)
-	SetTextColour(255, 255, 255, 255)
-	SetTextDropshadow(0, 0, 0, 0, 255)
-	SetTextDropShadow()
-	SetTextOutline()
+	SetTextProportional(1)
+	SetTextColour(255, 255, 255, 215)
+	SetTextEntry('STRING')
 	SetTextCentre(true)
-
-	SetDrawOrigin(coords, 0)
-	BeginTextCommandDisplayText('STRING')
-	AddTextComponentSubstringPlayerName(text)
-	EndTextCommandDisplayText(0.0, 0.0)
+	AddTextComponentString(text)
+	SetDrawOrigin(vector.xyz, 0)
+	DrawText(0.0, 0.0)
 	ClearDrawOrigin()
 end
 
--- Open inventory UI.
 ESX.ShowInventory = function()
-	exports["mf-inventory"]:openInventory()
+	local playerPed = ESX.PlayerData.ped
+	local elements, currentWeight = {}, 0
+
+	for k,v in pairs(ESX.PlayerData.accounts) do
+		if v.money > 0 then
+		local formattedMoney = _U('locale_currency', ESX.Math.GroupDigits(v.money))
+			local canDrop = v.name ~= 'bank'
+
+			table.insert(elements, {
+				label = ('%s: <span style="color:green;">%s</span>'):format(v.label, formattedMoney),
+				count = v.money,
+				type = 'item_account',
+				value = v.name,
+				usable = false,
+				rare = false,
+				canRemove = canDrop
+			})
+		end
+	end
+
+	for k,v in ipairs(ESX.PlayerData.inventory) do
+		if v.count > 0 then
+			currentWeight = currentWeight + (v.weight * v.count)
+
+			table.insert(elements, {
+				label = ('%s x%s'):format(v.label, v.count),
+				count = v.count,
+				type = 'item_standard',
+				value = v.name,
+				usable = v.usable,
+				rare = v.rare,
+				canRemove = v.canRemove
+			})
+		end
+	end
+
+	for k,v in ipairs(Config.Weapons) do
+		local weaponHash = GetHashKey(v.name)
+
+		if HasPedGotWeapon(playerPed, weaponHash, false) then
+			local ammo, label = GetAmmoInPedWeapon(playerPed, weaponHash)
+
+			if v.ammo then
+				label = ('%s - %s %s'):format(v.label, ammo, v.ammo.label)
+			else
+				label = v.label
+			end
+
+			table.insert(elements, {
+				label = label,
+				count = 1,
+				type = 'item_weapon',
+				value = v.name,
+				usable = false,
+				rare = false,
+				ammo = ammo,
+				canGiveAmmo = (v.ammo ~= nil),
+				canRemove = true
+			})
+		end
+	end
+
+	ESX.UI.Menu.CloseAll()
+
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'inventory', {
+		title    = _U('inventory', currentWeight, ESX.PlayerData.maxWeight),
+		align    = 'bottom-right',
+		elements = elements
+	}, function(data, menu)
+		menu.close()
+		local player, distance = ESX.Game.GetClosestPlayer()
+		elements = {}
+
+		if data.current.usable then
+			table.insert(elements, {label = _U('use'), action = 'use', type = data.current.type, value = data.current.value})
+		end
+
+		if data.current.canRemove then
+			if player ~= -1 and distance <= 3.0 then
+				table.insert(elements, {label = _U('give'), action = 'give', type = data.current.type, value = data.current.value})
+			end
+
+			table.insert(elements, {label = _U('remove'), action = 'remove', type = data.current.type, value = data.current.value})
+		end
+
+		if data.current.type == 'item_weapon' and data.current.canGiveAmmo and data.current.ammo > 0 and player ~= -1 and distance <= 3.0 then
+			table.insert(elements, {label = _U('giveammo'), action = 'give_ammo', type = data.current.type, value = data.current.value})
+		end
+
+		table.insert(elements, {label = _U('return'), action = 'return'})
+
+		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'inventory_item', {
+			title    = data.current.label,
+			align    = 'bottom-right',
+			elements = elements,
+		}, function(data1, menu1)
+			local item, type = data1.current.value, data1.current.type
+
+			if data1.current.action == 'give' then
+				local playersNearby = ESX.Game.GetPlayersInArea(GetEntityCoords(playerPed), 3.0)
+
+				if #playersNearby > 0 then
+					local players = {}
+					elements = {}
+
+					for k,playerNearby in ipairs(playersNearby) do
+						players[GetPlayerServerId(playerNearby)] = true
+					end
+
+					ESX.TriggerServerCallback('esx:getPlayerNames', function(returnedPlayers)
+						for playerId,playerName in pairs(returnedPlayers) do
+							table.insert(elements, {
+								label = playerName,
+								playerId = playerId
+							})
+						end
+
+						ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'give_item_to', {
+							title    = _U('give_to'),
+							align    = 'bottom-right',
+							elements = elements
+						}, function(data2, menu2)
+							local selectedPlayer, selectedPlayerId = GetPlayerFromServerId(data2.current.playerId), data2.current.playerId
+							playersNearby = ESX.Game.GetPlayersInArea(GetEntityCoords(playerPed), 3.0)
+							playersNearby = ESX.Table.Set(playersNearby)
+
+							if playersNearby[selectedPlayer] then
+								local selectedPlayerPed = GetPlayerPed(selectedPlayer)
+
+								if IsPedOnFoot(selectedPlayerPed) and not IsPedFalling(selectedPlayerPed) then
+									if type == 'item_weapon' then
+										TriggerServerEvent('esx:giveInventoryItem', selectedPlayerId, type, item, nil)
+										menu2.close()
+										menu1.close()
+									else
+										ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'inventory_item_count_give', {
+											title = _U('amount')
+										}, function(data3, menu3)
+											local quantity = tonumber(data3.value)
+
+											if quantity and quantity > 0 and data.current.count >= quantity then
+												TriggerServerEvent('esx:giveInventoryItem', selectedPlayerId, type, item, quantity)
+												menu3.close()
+												menu2.close()
+												menu1.close()
+											else
+												ESX.ShowNotification(_U('amount_invalid'))
+											end
+										end, function(data3, menu3)
+											menu3.close()
+										end)
+									end
+								else
+									ESX.ShowNotification(_U('in_vehicle'))
+								end
+							else
+								ESX.ShowNotification(_U('players_nearby'))
+								menu2.close()
+							end
+						end, function(data2, menu2)
+							menu2.close()
+						end)
+					end, players)
+				else
+					ESX.ShowNotification(_U('players_nearby'))
+				end
+			elseif data1.current.action == 'remove' then
+				if IsPedOnFoot(playerPed) and not IsPedFalling(playerPed) then
+					local dict, anim = 'weapons@first_person@aim_rng@generic@projectile@sticky_bomb@', 'plant_floor'
+					ESX.Streaming.RequestAnimDict(dict)
+
+					if type == 'item_weapon' then
+						menu1.close()
+						TaskPlayAnim(playerPed, dict, anim, 8.0, 1.0, 1000, 16, 0.0, false, false, false)
+						Citizen.Wait(1000)
+						TriggerServerEvent('esx:removeInventoryItem', type, item)
+					else
+						ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'inventory_item_count_remove', {
+							title = _U('amount')
+						}, function(data2, menu2)
+							local quantity = tonumber(data2.value)
+
+							if quantity and quantity > 0 and data.current.count >= quantity then
+								menu2.close()
+								menu1.close()
+								TaskPlayAnim(playerPed, dict, anim, 8.0, 1.0, 1000, 16, 0.0, false, false, false)
+								Citizen.Wait(1000)
+								TriggerServerEvent('esx:removeInventoryItem', type, item, quantity)
+							else
+								ESX.ShowNotification(_U('amount_invalid'))
+							end
+						end, function(data2, menu2)
+							menu2.close()
+						end)
+					end
+				end
+			elseif data1.current.action == 'use' then
+				TriggerServerEvent('esx:useItem', item)
+			elseif data1.current.action == 'return' then
+				ESX.UI.Menu.CloseAll()
+				ESX.ShowInventory()
+			elseif data1.current.action == 'give_ammo' then
+				local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
+				local closestPed = GetPlayerPed(closestPlayer)
+				local pedAmmo = GetAmmoInPedWeapon(playerPed, GetHashKey(item))
+
+				if IsPedOnFoot(closestPed) and not IsPedFalling(closestPed) then
+					if closestPlayer ~= -1 and closestDistance < 3.0 then
+						if pedAmmo > 0 then
+							ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'inventory_item_count_give', {
+								title = _U('amountammo')
+							}, function(data2, menu2)
+								local quantity = tonumber(data2.value)
+
+								if quantity and quantity > 0 then
+									if pedAmmo >= quantity then
+										TriggerServerEvent('esx:giveInventoryItem', GetPlayerServerId(closestPlayer), 'item_ammo', item, quantity)
+										menu2.close()
+										menu1.close()
+									else
+										ESX.ShowNotification(_U('noammo'))
+									end
+								else
+									ESX.ShowNotification(_U('amount_invalid'))
+								end
+							end, function(data2, menu2)
+								menu2.close()
+							end)
+						else
+							ESX.ShowNotification(_U('noammo'))
+						end
+					else
+						ESX.ShowNotification(_U('players_nearby'))
+					end
+				else
+					ESX.ShowNotification(_U('in_vehicle'))
+				end
+			end
+		end, function(data1, menu1)
+			ESX.UI.Menu.CloseAll()
+			ESX.ShowInventory()
+		end)
+	end, function(data, menu)
+		menu.close()
+	end)
 end
 
 RegisterNetEvent('esx:serverCallback')
@@ -908,16 +1011,17 @@ end)
 -- SetTimeout
 Citizen.CreateThread(function()
 	while true do
-		Citizen.Wait(0)
-		local currTime = GetGameTimer()
-
-		for i=1, #ESX.TimeoutCallbacks, 1 do
-			if ESX.TimeoutCallbacks[i] then
+		local sleep = 100
+		if #ESX.TimeoutCallbacks > 0 then
+			local currTime = GetGameTimer()
+			sleep = 0
+			for i=1, #ESX.TimeoutCallbacks, 1 do
 				if currTime >= ESX.TimeoutCallbacks[i].time then
 					ESX.TimeoutCallbacks[i].cb()
 					ESX.TimeoutCallbacks[i] = nil
 				end
 			end
 		end
+		Citizen.Wait(sleep)
 	end
 end)
