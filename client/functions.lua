@@ -541,6 +541,7 @@ ESX.Game.GetVehicleProperties = function(vehicle)
 		local pearlescentColor, wheelColor = GetVehicleExtraColours(vehicle)
 		local dshcolor = GetVehicleDashboardColour(vehicle)
 		local intcolor = GetVehicleInteriorColour(vehicle)
+		local drift = GetDriftTyresEnabled(vehicle)
 		local extras = {}
 
 		for id=0, 12 do
@@ -571,6 +572,7 @@ ESX.Game.GetVehicleProperties = function(vehicle)
 			wheelColor        = wheelColor,
 			dshcolor 		  = dshcolor,
 			intcolor 		  = intcolor,
+			drift			  = drift,
 
 			wheels            = GetVehicleWheelType(vehicle),
 			windowTint        = GetVehicleWindowTint(vehicle),
@@ -682,6 +684,9 @@ ESX.Game.SetVehicleProperties = function(vehicle, props)
 		end
 		if props.intcolor ~= nil then
 			SetVehicleInteriorColour(vehicle, props.intcolor)
+		end
+		if props.drift ~= nil then
+			SetDriftTyresEnabled(vehicle,props.drift)
 		end
 		----- APARTIR DAQUI N MEXI EM MAIS NADA
 		if props.pearlescentColor then SetVehicleExtraColours(vehicle, props.pearlescentColor, wheelColor) end
