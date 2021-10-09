@@ -357,13 +357,15 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 		end
 	end
 
-	self.updateWeaponAmmo = function(weaponName, ammoCount)
+	self.updateWeaponAmmo = function(weaponName, ammoCount, weaponRemoved)
 		local loadoutNum, weapon = self.getWeapon(weaponName)
-
+	  
 		if weapon then
-			if ammoCount < weapon.ammo then
-				weapon.ammo = ammoCount
-			end
+		  if weaponRemoved then
+			self.removeWeapon(weaponName)
+		  elseif ammoCount < weapon.ammo then
+			weapon.ammo = ammoCount
+		  end
 		end
 	end
 
