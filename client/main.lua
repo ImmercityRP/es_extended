@@ -371,66 +371,73 @@ end
 function StartServerSyncLoops()
 	-- keep track of ammo
 	Citizen.CreateThread(function()
-	  while true do
-		Citizen.Wait(0)
-  
-		if isDead then
-		  Citizen.Wait(500)
-		else
-		  local playerPed = PlayerPedId()
-  
-		  if IsPedShooting(playerPed) then
-			local _,weaponHash = GetCurrentPedWeapon(playerPed, true)
-			local weapon = ESX.GetWeaponFromHash(weaponHash)
-  
-			if weapon then
-			  local ammoCount = GetAmmoInPedWeapon(playerPed, weaponHash)
-			  local removeWeapon = false
-  
-			  if ammoCount <= 0 then
-				local damageType = GetWeaponDamageType(weaponHash)
-  
-				if damageType == 1
-				or damageType == 5
-				or damageType == 6
-				or damageType == 12
-				or damageType == 13
-				then                
-				  Wait(1000)
-  
-				  if not HasPedGotWeapon(playerPed, weaponHash, false) then
-					removeWeapon = true
-				  end
-				end
-			  end
-  
-			  TriggerServerEvent('esx:updateWeaponAmmo', weapon.name, ammoCount, removeWeapon)
+		local currentWeapon = {timer=0}
+		while ESX.PlayerLoaded do
+			local sleep = 5
+
+			if currentWeapon.timer == sleep then
+				local ammoCount = GetAmmoInPedWeapon(ESX.PlayerData.ped, currentWeapon.hash)
+				local removeWeapon = false
+				if ammoCount <= 0 then
+					local damageType = GetWeaponDamageType(currentWeapon.hash)
+
+					if damageType == 1
+						or damageType == 5
+						or damageType == 6
+						or damageType == 12
+						or damageType == 13
+					then                
+						Wait(1000)
+						if not HasPedGotWeapon(ESX.PlayerData.ped, currentWeapon.hash, false) then
+							removeWeapon = true
+						end
+              		end
+            	end
+				TriggerServerEvent('esx:updateWeaponAmmo', currentWeapon.name, ammoCount, removeWeapon)
+				currentWeapon.timer = 0
+			elseif currentWeapon.timer > sleep then
+				currentWeapon.timer = currentWeapon.timer - sleep
 			end
-		  end
+
+			if IsPedArmed(ESX.PlayerData.ped, 4) then
+				if IsPedShooting(ESX.PlayerData.ped) then
+					local _,weaponHash = GetCurrentPedWeapon(ESX.PlayerData.ped, true)
+					local weapon = ESX.GetWeaponFromHash(weaponHash)
+
+					if weapon then
+						currentWeapon.name = weapon.name
+						currentWeapon.hash = weaponHash	
+						currentWeapon.timer = 100 * sleep		
+					end
+				end
+			else
+				sleep = 200
+			end
+			Citizen.Wait(sleep)
 		end
-	  end
 	end)
-  
+
 	-- sync current player coords with server
 	Citizen.CreateThread(function()
-	  local previousCoords = vector3(ESX.PlayerData.coords.x, ESX.PlayerData.coords.y, ESX.PlayerData.coords.z)
-  
-	  while true do
-		Citizen.Wait(1000)
-		local playerPed = PlayerPedId()
-  
-		if DoesEntityExist(playerPed) then
-		  local playerCoords = GetEntityCoords(playerPed)
-		  local distance = #(playerCoords - previousCoords)
-  
-		  if distance > 1 then
-			previousCoords = playerCoords
-			local playerHeading = ESX.Math.Round(GetEntityHeading(playerPed), 1)
-			local formattedCoords = {x = ESX.Math.Round(playerCoords.x, 1), y = ESX.Math.Round(playerCoords.y, 1), z = ESX.Math.Round(playerCoords.z, 1), heading = playerHeading}
-			TriggerServerEvent('esx:updateCoords', formattedCoords)
-		  end
+		local previousCoords = vector3(ESX.PlayerData.coords.x, ESX.PlayerData.coords.y, ESX.PlayerData.coords.z)
+
+		while ESX.PlayerLoaded do
+			local playerPed = PlayerPedId()
+			if ESX.PlayerData.ped ~= playerPed then ESX.SetPlayerData('ped', playerPed) end
+
+			if DoesEntityExist(ESX.PlayerData.ped) then
+				local playerCoords = GetEntityCoords(ESX.PlayerData.ped)
+				local distance = #(playerCoords - previousCoords)
+
+				if distance > 1 then
+					previousCoords = playerCoords
+					local playerHeading = ESX.Math.Round(GetEntityHeading(ESX.PlayerData.ped), 1)
+					local formattedCoords = {x = ESX.Math.Round(playerCoords.x, 1), y = ESX.Math.Round(playerCoords.y, 1), z = ESX.Math.Round(playerCoords.z, 1), heading = playerHeading}
+					TriggerServerEvent('esx:updateCoords', formattedCoords)
+				end
+			end
+			Citizen.Wait(1500)
 		end
-	  end
 	end)
 end
 
