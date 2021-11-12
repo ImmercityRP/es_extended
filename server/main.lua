@@ -43,38 +43,60 @@ else
 	end)
 end
 
+-- function onPlayerJoined(playerId)
+-- 	TriggerEvent("Multichar:GetCharacterIdentifier",playerId,function(identifier)
+-- 	  if identifier then
+-- 		if ESX.GetPlayerFromIdentifier(identifier) then
+-- 		  DropPlayer(playerId, ('there was an error loading your character!\nError code: identifier-active-ingame\n\nThis error is caused by a player on this server who has the same identifier as you have. Make sure you are not playing on the same Rockstar account.\n\nYour Rockstar identifier: %s'):format(identifier))
+-- 		else
+-- 		  MySQL.Async.fetchScalar('SELECT 1 FROM users WHERE identifier = @identifier', {
+-- 			['@identifier'] = identifier
+-- 		  }, function(result)
+-- 			if result then
+-- 			  loadESXPlayer(identifier, playerId)
+-- 			else
+-- 			  local accounts = {}
+  
+-- 			  for account,money in pairs(Config.StartingAccountMoney) do
+-- 				accounts[account] = money
+-- 			  end
+  
+-- 			  MySQL.Async.execute('INSERT INTO users (accounts, identifier) VALUES (@accounts, @identifier)', {
+-- 				['@accounts'] = json.encode(accounts),
+-- 				['@identifier'] = identifier
+-- 			  }, function(rowsChanged)
+-- 				loadESXPlayer(identifier, playerId)
+-- 			  end)
+-- 			end
+-- 		  end)
+-- 		end
+-- 	  else
+-- 		DropPlayer(playerId, 'there was an error loading your character!\nError code: identifier-missing-ingame\n\nThe cause of this error is not known, your identifier could not be found. Please come back later or report this problem to the server administration team.')
+-- 	  end
+-- 	end)
+-- end
+
 function onPlayerJoined(playerId)
 	TriggerEvent("Multichar:GetCharacterIdentifier",playerId,function(identifier)
+	  -- local identifier = ESX.GetIdentifier(playerId)
 	  if identifier then
-		if ESX.GetPlayerFromIdentifier(identifier) then
-		  DropPlayer(playerId, ('there was an error loading your character!\nError code: identifier-active-ingame\n\nThis error is caused by a player on this server who has the same identifier as you have. Make sure you are not playing on the same Rockstar account.\n\nYour Rockstar identifier: %s'):format(identifier))
-		else
-		  MySQL.Async.fetchScalar('SELECT 1 FROM users WHERE identifier = @identifier', {
-			['@identifier'] = identifier
-		  }, function(result)
-			if result then
-			  loadESXPlayer(identifier, playerId)
-			else
-			  local accounts = {}
-  
-			  for account,money in pairs(Config.StartingAccountMoney) do
-				accounts[account] = money
-			  end
-  
-			  MySQL.Async.execute('INSERT INTO users (accounts, identifier) VALUES (@accounts, @identifier)', {
-				['@accounts'] = json.encode(accounts),
-				['@identifier'] = identifier
-			  }, function(rowsChanged)
-				loadESXPlayer(identifier, playerId)
+		  if ESX.GetPlayerFromIdentifier(identifier) then
+			  DropPlayer(playerId, ('there was an error loading your character!\nError code: identifier-active-ingame\n\nThis error is caused by a player on this server who has the same identifier as you have. Make sure you are not playing on the same Rockstar account.\n\nYour Rockstar identifier: %s'):format(identifier))
+		  else
+			  MySQL.Async.fetchScalar('SELECT 1 FROM users WHERE identifier = @identifier', {
+				  ['@identifier'] = identifier
+			  }, function(result)
+				  -- print(playerId,identifier,result)
+				  if result then
+					  loadESXPlayer(identifier, playerId, false)
+				  else createESXPlayer(identifier, playerId) end
 			  end)
-			end
-		  end)
-		end
+		  end
 	  else
-		DropPlayer(playerId, 'there was an error loading your character!\nError code: identifier-missing-ingame\n\nThe cause of this error is not known, your identifier could not be found. Please come back later or report this problem to the server administration team.')
+		  DropPlayer(playerId, 'there was an error loading your character!\nError code: identifier-missing-ingame\n\nThe cause of this error is not known, your identifier could not be found. Please come back later or report this problem to the server administration team.')
 	  end
 	end)
-end
+  end
 
 AddEventHandler('esx:playerLogout', function(source,callback)
 	local xPlayer = ESX.GetPlayerFromId(source)
@@ -637,4 +659,19 @@ AddEventHandler('txAdmin:events:scheduledRestart', function(eventData)
 			ESX.SavePlayers()
 		end)
 	end
+end)
+
+AddEventHandler('esx:playerLogout', function(source,callback)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if xPlayer then
+	  ExecuteCommand(('remove_principal identifier.%s group.%s'):format(xPlayer.license, xPlayer.group))
+	  TriggerEvent('esx:playerDropped', source, reason)
+  
+	  ESX.SavePlayer(xPlayer, function()
+		ESX.Players[source] = nil
+		callback()
+	  end)
+	end
+	
+	TriggerClientEvent("esx:onPlayerLogout",source)
 end)
