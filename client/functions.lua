@@ -392,6 +392,7 @@ ESX.Game.SpawnVehicle = function(vehicle, coords, heading, cb, networked)
 		SetVehicleNeedsToBeHotwired(vehicle, false)
 		SetModelAsNoLongerNeeded(model)
 		SetVehRadioStation(vehicle, 'OFF')
+		exports['t1ger_keys']:SetVehicleLocked(vehicle, 0)
 
 		RequestCollisionAtCoord(vector.xyz)
 		while not HasCollisionLoadedAroundEntity(vehicle) do
