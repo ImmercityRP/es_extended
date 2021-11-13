@@ -121,7 +121,7 @@ ESX.RegisterCommand('clearinventory', 'admin', function(xPlayer, args, showError
 
 ESX.RegisterCommand('clearloadout', 'admin', function(xPlayer, args, showError)
 	for k,v in ipairs(args.playerId.loadout) do
-	  args.playerId.removeWeapon(v.name)
+		args.playerId.removeWeapon(v.name,v.ammo,true)
 	end
 	exports["mf-inventory"]:clearLoadout(args.playerId.identifier)
   end, true, {help = _U('command_clearloadout'), validate = true, arguments = {
