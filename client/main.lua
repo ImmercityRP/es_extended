@@ -377,22 +377,25 @@ function StartServerSyncLoops()
 
 			if currentWeapon.timer == sleep then
 				local ammoCount = GetAmmoInPedWeapon(ESX.PlayerData.ped, currentWeapon.hash)
-				local removeWeapon = false
-				if ammoCount <= 0 then
-					local damageType = GetWeaponDamageType(currentWeapon.hash)
+                local removeWeapon = false
+  
+                if ammoCount <= 0 then
+                  local damageType = GetWeaponDamageType(weaponHash)
+    
+                  if damageType == 1
+                  or damageType == 5
+                  or damageType == 6
+                  or damageType == 12
+                  or damageType == 13
+                  then                
+                    Wait(1000)
+    
+                    if not HasPedGotWeapon(playerPed, weaponHash, false) then
+                      removeWeapon = true
+                    end
+                  end
+                end
 
-					if damageType == 1
-						or damageType == 5
-						or damageType == 6
-						or damageType == 12
-						or damageType == 13
-					then                
-						Wait(1000)
-						if not HasPedGotWeapon(ESX.PlayerData.ped, currentWeapon.hash, false) then
-							removeWeapon = true
-						end
-              		end
-            	end
 				TriggerServerEvent('esx:updateWeaponAmmo', currentWeapon.name, ammoCount, removeWeapon)
 				currentWeapon.timer = 0
 			elseif currentWeapon.timer > sleep then
@@ -403,6 +406,7 @@ function StartServerSyncLoops()
 				if IsPedShooting(ESX.PlayerData.ped) then
 					local _,weaponHash = GetCurrentPedWeapon(ESX.PlayerData.ped, true)
 					local weapon = ESX.GetWeaponFromHash(weaponHash)
+                    
 
 					if weapon then
 						currentWeapon.name = weapon.name
