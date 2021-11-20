@@ -380,7 +380,7 @@ function StartServerSyncLoops()
                 local removeWeapon = false
   
                 if ammoCount <= 0 then
-                  local damageType = GetWeaponDamageType(weaponHash)
+                  local damageType = GetWeaponDamageType(currentWeapon.hash)
     
                   if damageType == 1
                   or damageType == 5
@@ -390,7 +390,7 @@ function StartServerSyncLoops()
                   then                
                     Wait(1000)
     
-                    if not HasPedGotWeapon(playerPed, weaponHash, false) then
+                    if not HasPedGotWeapon(playerPed, currentWeapon.hash, false) then
                       removeWeapon = true
                     end
                   end
