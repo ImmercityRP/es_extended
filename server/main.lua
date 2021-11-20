@@ -413,11 +413,11 @@ AddEventHandler('esx:updateCoords', function(coords)
 end)
 
 RegisterNetEvent('esx:updateWeaponAmmo')
-AddEventHandler('esx:updateWeaponAmmo', function(weaponName, ammoCount)
+AddEventHandler('esx:updateWeaponAmmo', function(weaponName, ammoCount, removeWeapon)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
 	if xPlayer then
-		xPlayer.updateWeaponAmmo(weaponName, ammoCount)
+		xPlayer.updateWeaponAmmo(weaponName, ammoCount, removeWeapon)
 	end
 end)
 
