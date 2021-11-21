@@ -365,6 +365,7 @@ function CreateExtendedPlayer(playerId, identifier, group, accounts, inventory, 
 			self.removeWeapon(weaponName)
 		  elseif ammoCount < weapon.ammo then
 			weapon.ammo = ammoCount
+			self.triggerEvent('esx:setWeaponAmmo', weaponName, weapon.ammo)
 		  end
 		end
 	end
