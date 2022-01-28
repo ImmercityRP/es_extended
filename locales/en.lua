@@ -223,7 +223,7 @@ Locales['en'] = {
   ['weapon_garbagebag'] = 'Garbage Bag',
   ['weapon_handcuffs'] = 'Handcuffs',
   ['gadget_nightvision'] = 'Night Vision',
-  ['gadget_parachute'] = 'parachute',
+  ['gadget_parachute'] = 'Parachute',
 
   -- Weapon Components
   ['component_knuckle_base'] = 'base Model',
