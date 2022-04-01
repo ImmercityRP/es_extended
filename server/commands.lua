@@ -203,7 +203,7 @@ end, true, {help = _U('kill'), validate = true, arguments = {
 
 ESX.RegisterCommand('reviveall', "admin", function(xPlayer, args, showError)
 	for _, playerId in ipairs(GetPlayers()) do
-		TriggerClientEvent('esx_ambulancejob:revive', playerId)
+		TriggerClientEvent('gl-ambulance:revivePlayer', playerId)
 	end
 end, false)
 
