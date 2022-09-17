@@ -447,7 +447,8 @@ end
 
 if Config.EnableDefaultInventory then
 	RegisterCommand('showinv', function()
-		if not ESX.PlayerData.dead and not ESX.UI.Menu.IsOpen('default', 'es_extended', 'inventory') then
+		local isHandcuffed = IsPedCuffed(PlayerPedId())
+		if not ESX.PlayerData.dead and not isHandcuffed and not ESX.UI.Menu.IsOpen('default', 'es_extended', 'inventory') then
 			ESX.ShowInventory()
 		end
 	end)
