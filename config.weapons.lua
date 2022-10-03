@@ -65,7 +65,17 @@ Config.Weapons = {
 			{name = 'luxary_finish', label = _U('component_luxary_finish'), hash = `COMPONENT_APPISTOL_VARMOD_LUXE`}
 		}
 	},
-	{name = 'WEAPON_CERAMICPISTOL', label = _U('weapon_ceramicpistol'), tints = Config.DefaultWeaponTints, components = {}, ammo = {label = _U('ammo_rounds'), hash = `AMMO_PISTOL`}},
+	{
+		name = 'WEAPON_CERAMICPISTOL', 
+		label = _U('weapon_ceramicpistol'), 
+		ammo = {label = _U('ammo_rounds'), hash = `AMMO_PISTOL`},
+		tints = Config.DefaultWeaponTints,
+		components = {
+			{name = 'clip_default', label = _U('component_clip_default'), hash = `COMPONENT_APPISTOL_CLIP_01`},
+			{name = 'clip_extended', label = _U('component_clip_extended'), hash = `COMPONENT_APPISTOL_CLIP_02`},
+			{name = 'suppressor', label = _U('component_suppressor'), hash = `COMPONENT_AT_PI_SUPP`}
+		}
+	},
 	{
 		name = 'WEAPON_COMBATPISTOL',
 		label = _U('weapon_combatpistol'),
