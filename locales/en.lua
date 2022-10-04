@@ -237,7 +237,7 @@ Locales['en'] = {
   ['component_knuckle_king'] = 'the King',
   ['component_knuckle_vagos'] = 'the Vagos',
 
-  ['component_luxary_finish'] = 'Luxury Finish',
+  ['component_luxary_finish'] = 'luxary Weapon Finish',
 
   ['component_handle_default'] = 'default Handle',
   ['component_handle_vip'] = 'vIP Handle',
@@ -270,20 +270,20 @@ Locales['en'] = {
   ['component_camo_slide_finish10'] = 'boom Slide Camo',
   ['component_camo_slide_finish11'] = 'patriotic Slide Camo',
 
-  ['component_clip_default'] = 'Default Clip',
-  ['component_clip_extended'] = 'Extended Clip',
-  ['component_clip_drum'] = 'Drum Clip',
-  ['component_clip_box'] = 'Box Clip',
+  ['component_clip_default'] = 'default Magazine',
+  ['component_clip_extended'] = 'extended Magazine',
+  ['component_clip_drum'] = 'drum Magazine',
+  ['component_clip_box'] = 'box Magazine',
 
   ['component_scope_holo'] = 'holographic Scope',
   ['component_scope_small'] = 'small Scope',
   ['component_scope_medium'] = 'medium Scope',
   ['component_scope_large'] = 'large Scope',
-  ['component_scope'] = 'Weapon Scope',
-  ['component_scope_advanced'] = 'Advanced Scope',
+  ['component_scope'] = 'mounted Scope',
+  ['component_scope_advanced'] = 'advanced Scope',
   ['component_ironsights'] = 'ironsights',
 
-  ['component_suppressor'] = 'Suppressor',
+  ['component_suppressor'] = 'suppressor',
   ['component_compensator'] = 'compensator',
 
   ['component_muzzle_flat'] = 'flat Muzzle Brake',
@@ -295,8 +295,8 @@ Locales['en'] = {
   ['component_muzzle_split'] = 'split-End Muzzle Brake',
   ['component_muzzle_squared'] = 'squared Muzzle Brake',
 
-  ['component_flashlight'] = 'Weapon Light',
-  ['component_grip'] = 'Weapon Grip',
+  ['component_flashlight'] = 'flashlight',
+  ['component_grip'] = 'grip',
 
   ['component_barrel_default'] = 'default Barrel',
   ['component_barrel_heavy'] = 'heavy Barrel',
