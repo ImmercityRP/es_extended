@@ -182,7 +182,7 @@ Locales['en'] = {
   ['weapon_carbinerifle'] = 'Service Rifle',
   ['weapon_carbinerifle_mk2'] = 'Carbine Rifle MK2',
   ['weapon_compactrifle'] = 'Compact Rifle',
-  ['weapon_militaryrifle'] = 'Military Rifle',
+  ['weapon_militaryrifle'] = 'Military Surplus Rifle',
   ['weapon_specialcarbine'] = 'SWAT Rifle',
   ['weapon_specialcarbine_mk2'] = 'Special Carbine MK2',
 
