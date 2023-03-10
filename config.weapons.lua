@@ -762,7 +762,7 @@ Config.Weapons = {
 		components = {
 			{name = 'clip_default', label = _U('component_clip_default'), hash = `COMPONENT_MILITARYRIFLE_CLIP_01`},
 			{name = 'clip_extended', label = _U('component_clip_extended'), hash = `COMPONENT_MILITARYRIFLE_CLIP_02`},
-			{name = 'ironsights', label = _U('component_ironsights'), hash = `COMPONENT_MILITARYRIFLE_SIGHT_01`},
+			-- {name = 'ironsights', label = _U('component_ironsights'), hash = `COMPONENT_MILITARYRIFLE_SIGHT_01`},
 			{name = 'scope', label = _U('component_scope'), hash = `COMPONENT_AT_SCOPE_SMALL`},
 			{name = 'flashlight', label = _U('component_flashlight'), hash = `COMPONENT_AT_AR_FLSH`},
 			{name = 'suppressor', label = _U('component_suppressor'), hash = `COMPONENT_AT_AR_SUPP`}
