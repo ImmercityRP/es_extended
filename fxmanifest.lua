@@ -8,16 +8,7 @@ version 'legacy'
 
 shared_scripts {
 	'locale.lua',
-	'locales/de.lua',
-	'locales/br.lua',
-	'locales/fr.lua',
 	'locales/en.lua',
-	'locales/fi.lua',
-	'locales/sv.lua',
-	'locales/pl.lua',
-	'locales/cs.lua',
-	'locales/sc.lua',
-	'locales/tc.lua',
 
 	'config.lua',
 	'config.weapons.lua',
